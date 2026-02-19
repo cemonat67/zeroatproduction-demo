@@ -1,0 +1,10 @@
+GOLDEN_V1 timestamp: 20260219_135711
+Path: /Users/cemonat/Desktop/MyBigProjectZAE_MasterFolder/ZeroAtProductionDeployFinal/site
+Files copied:
+- index.html
+- production-data.js
+Optional bundles if existed:
+- assets/js/main.min.js
+- assets/css/main.min.css
+Archive:
+- site_GOLDEN_V1_20260219_135711.tgz (excludes ./_snapshots)

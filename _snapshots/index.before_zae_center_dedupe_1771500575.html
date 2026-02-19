@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" data-page="zap">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Zero@Production — Dashboard</title>
+
+  <!-- Main CSS (already standardized in your project) -->
+  <link rel="stylesheet" href="assets/css/main.min.css" />
+
+    <link rel="stylesheet" href="assets/css/layout.override.css" />
+  <link rel="stylesheet" href="assets/css/zap-theme.css" />
+<!-- DISABLED: zap-index.inline-migrated.css (conflicts with theme) -->
+<link rel="stylesheet" href="assets/css/zap-theme.override.css" />
+</head>
+
+<body>
+  <div class="zero-color-bar"></div>
+<div id="zae-center">
+<div id="zae-center">
+<div id="zae-center">
+  <div class="wrap">
+    <div class="topbar">
+      <img src="assets/img/logo.png" alt="Zero@Production" />
+      <div>
+        <div style="" id="brandTitle">Zero@Production</div>
+        <div class="muted">ML-Ready · Offline-first · iPad-safe</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card span-12">
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <button class="btn" id="btnPdf">Export PDF (simple)</button>
+          <a class="btn" href="index.html">Refresh</a>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center">
+          <input id="inpPassportId" class="inp" type="text" placeholder="Passport ID (e.g., EKOTEN-2401-B01)" />
+          <input id="inpFacility" class="inp" type="text" placeholder="Facility (optional)" />
+          <a href="#" class="btn" id="btnLoadLive">Load Live</a>
+        </div>
+
+        <div class="muted" style="margin-top:10px">
+          This is the clean base. We will plug your existing modules/cards back in step-by-step.
+        </div>
+      </div>
+
+      <!-- SLOT: Executive Cards -->
+      
+      <!-- EXECUTIVE CARDS (injected) -->
+<div class="card span-4" id="slotExecutive1">
+  <div style="font-size:12px;opacity:.6;">CEO</div>
+  <div style="font-size:22px;margin-top:6px;">Overall Score <span id="liveBadge" class="badge badge-live">LIVE</span></div>
+  <div id="ceoScore" style="font-size:36px;margin-top:10px;">75%</div>
+  <div id="ceoSub" class="muted" style="margin-top:6px;">Total CO₂ (batch)</div>
+  <div id="ceoMeta" class="muted" style="margin-top:10px; font-size:12px; line-height:1.35;"></div>
+
+  <div class="muted">Demo value (static)</div>
+</div>
+
+<div class="card span-4" id="slotExecutive2">
+  <div style="font-size:12px;opacity:.6;">CFO</div>
+  <div style="font-size:22px;margin-top:6px;">Impact / Year</div>
+  <div id="cfoImpact" style="font-size:28px;margin-top:10px;">&euro; 477,440</div>
+  <div class="muted">Estimated financial exposure</div>
+</div>
+
+<div class="card span-4" id="slotExecutive3">
+  <div style="font-size:12px;opacity:.6;">CTO</div>
+
+  <div style="font-size:22px;margin-top:14px;">System Health</div>
+  <div id="ctoHealth" style="font-size:28px;margin-top:10px;">OK<div id="ctoNotes" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+  <div class="muted">One-click executive snapshot. Demo-safe.</div>
+  
+  <div id="ctoSub" class="muted" style="font-size:11px;opacity:.55;">Offline mode active</div>
+<div style="font-size:14px;opacity:.65;margin-top:6px;">Export / Copy / Email</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+    <a href="#" class="pill" id="btnExportPDF">Export PDF</a>
+    <a href="#" class="pill" id="btnCopySummary">Copy Summary</a>
+    <a href="#" class="pill" id="btnEmailSnapshot">Email Snapshot</a>
+  </div>
+
+  </div>
+  </div>
+
+
+  
+</div>
+
+  
+
+</div>
+<!-- /EXECUTIVE CARDS -->
+
+
+      <!-- SLOT: Modules -->
+      <div class="card span-12" id="slotModules">
+        <div style="font-size:12px;opacity:.6;">Modules</div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:10px;">
+          <a class="pill" href="fibre-dpp.html">Fibre DPP</a>
+          <a class="pill" href="yarn-dpp.html">Yarn DPP</a>
+          <a class="pill" href="fabric-dpp.html">Fabric DPP</a>
+          <a class="pill" href="chemicals-dyes-management.dpp.html">Chemicals &amp; Dyes</a>
+          <a class="pill" href="finishing-dpp.html">Finishing</a>
+          <a class="pill" href="GarmentDPP.html">Garment</a>
+          <a class="pill" href="wastewater-intelligence.html">Wastewater</a>
+        </div>
+        <div class="muted" style="margin-top:10px;">Open a module • Return back via “← Back”</div>
+      </div>
+
+      <!-- SLOT: Ingestion (Manual + CSV) -->
+      <div class="card span-12" id="slotIngestion">
+        <div style="font-size:12px;opacity:.6;">Ingestion</div>
+
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;">
+          <a href="#" class="pill" id="tabManual">Manual Entry</a>
+          <a href="#" class="pill" id="tabCSV">CSV Upload</a>
+        </div>
+
+        <div id="paneManual" style="margin-top:12px;display:none;">
+          <div class="muted" style="margin-bottom:8px;">Manual input (demo-safe). Not submitted yet.</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input class="inp" id="inpPeriod" type="text" placeholder="Period (YYYY-MM)" />
+            <input class="inp" id="inpProductionKg" type="number" placeholder="Production (kg)" />
+            <input class="inp" id="inpEnergyKwh" type="number" placeholder="Energy (kWh)" />
+          </div>
+          <div class="muted" style="margin-top:10px;">Next: validate + write to cache + compute CO₂.</div>
+        </div>
+
+        <div id="paneCSV" style="margin-top:12px;display:none;">
+          <div class="muted" style="margin-bottom:8px;">Upload two CSVs (energy.csv + production.csv). We only parse + preview counts for now.</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input class="inp" id="csvEnergy" type="file" accept=".csv,text/csv" />
+            <input class="inp" id="csvProduction" type="file" accept=".csv,text/csv" />
+          </div>
+          <div class="muted" id="csvStatus" style="margin-top:10px;">No files loaded.</div>
+        </div>
+
+      </div>
+
+
+    </div>
+
+  <!-- Vendor libs -->
+  <script src="assets/libs/jspdf.umd.min.js"></script>
+
+  <!-- Our clean wrapper -->
+  <script src="assets/js/pdf-engine.js"></script>
+
+  <script>
+    (function(){
+"use strict";
+
+      var btn = document.getElementById("btnPdf");
+      if (btn) {
+        btn.addEventListener("click", function(){
+          window.ZeroPDF.exportSimpleReport("Zero@Production Report", [
+"Generated:" + new Date().toISOString(),
+"Status: Base skeleton OK",
+"Next: plug back executive cards + module tiles"
+          ]);
+        });
+      }
+    })();
+  </script>
+<script src="assets/libs/supabase.umd.js"></script>
+<script src="assets/js/supabase.fabric.config.js?v=1771344458"></script>
+
+<script>
+/* ZERO_SUPABASE_CLIENT_V1 */
+(function(){
+  if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+    return;
+  }
+  window.supabaseClient = window.supabase.createClient(
+    window.SUPABASE_URL,
+    window.SUPABASE_ANON_KEY,
+    { db: { schema: window.SUPABASE_SCHEMA || "public" } }
+  );
+})();
+</script>
+
+
+<script src="assets/js/production-data.js?v=1771454002"></script>
+<script>window.ZeroProductionV1 && window.ZeroProductionV1.boot();</script>
+
+</div>
+  <script src="assets/js/manual-entry-wastewater.js?v=1771451748"></script>
+</body>
+</html>

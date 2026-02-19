@@ -1,0 +1,170 @@
+/* Zero@Production v1 — data layer (Supabase + cache) */
+(function () {
+  const KEY = "ZP_V1_CACHE";
+  const TTL_MS = 5 * 60 * 1000; // 5 min
+
+  function now() { return Date.now(); }
+
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.ts) return null;
+      if (now() - obj.ts > TTL_MS) return null;
+      return obj.data || null;
+    } catch { return null; }
+  }
+
+  function writeCache(data) {
+    try { localStorage.setItem(KEY, JSON.stringify({ ts: now(), data })); } catch {}
+  }
+
+  function setText(sel, txt) {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = txt;
+  }
+
+  function setHealth(state, lastSync) {
+    setText("#ctoHealth", state);
+    setText("#ctoSub", lastSync ? `Last sync: ${lastSync}` : "Offline mode active");
+  }
+
+  function render(data, mode) {
+    setText("#ceoScore", (data?.scorePct ?? 75) + "%");
+    setText("#cfoImpact", "€ " + (data?.eurYear ?? 477440).toLocaleString("en-GB"));
+    setHealth(data?.health ?? (mode === "offline" ? "DEGRADED" : "OK"), data?.lastSyncISO ?? null);
+  }
+
+  async function fetchLive() {
+    // V1 placeholder — next step: hook to Supabase REST
+    return {
+      scorePct: 75,
+      eurYear: 477440,
+      health: "OK",
+      lastSyncISO: new Date().toISOString()
+    };
+  }
+
+  async function boot() {
+    const cached = readCache();
+    if (cached) { render(cached, "cache"); return; }
+
+    try {
+      const live = await fetchLive();
+      writeCache(live);
+      render(live, "live");
+    } catch (e) {
+      render(null, "offline");
+    }
+  }
+
+  window.ZeroProductionV1 = { boot };
+})();
+
+/* ZP_ACTIONS_ENGINE_V1 */
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  function getText(id, fallback){
+    const el = $(id);
+    const t = el ? (el.textContent || "").trim() : "";
+    return t || fallback || "";
+  }
+
+  function buildExecutiveSummary(){
+    const ceoScore = getText("ceoScore", "—");
+    const cfoImpact = getText("cfoImpact", "—");
+    const ctoHealth = getText("ctoHealth", "—");
+    const ctoSub = getText("ctoSub", "");
+
+    const ts = new Date().toISOString();
+    const lines = [
+      "Zero@Production — Executive Snapshot",
+      "ML-Ready · Offline-first · iPad-safe",
+      "",
+      `CEO — Overall Score: ${ceoScore}`,
+      `CFO — Impact / Year: ${cfoImpact}`,
+      `CTO — System Health: ${ctoHealth}${ctoSub ? " ("+ctoSub+")" : ""}`,
+      "",
+      `Generated: ${ts}`,
+      "",
+      "Modules: Fibre · Yarn · Fabric · Chemicals & Dyes · Finishing · Garment · Wastewater"
+    ];
+    return lines.join("\n");
+  }
+
+  async function copyToClipboard(text){
+    // modern
+    try{
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    }catch(e){ /* fallthrough */ }
+
+    // fallback
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "readonly");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function mailtoSnapshot(){
+    const subject = encodeURIComponent("Zero@Production — Executive Snapshot");
+    const body = encodeURIComponent(buildExecutiveSummary());
+    // demo-safe: user still confirms in mail client
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }
+
+  function exportSimplePDF(){
+    const summary = buildExecutiveSummary();
+
+    // Senin index.html’de zaten window.ZeroPDF.exportSimpleReport kullanımı var.
+    // Yoksa fallback: print dialog.
+    if (window.ZeroPDF && typeof window.ZeroPDF.exportSimpleReport === "function"){
+      window.ZeroPDF.exportSimpleReport("Zero@Production Report", [
+        { h: "Executive Snapshot", p: summary }
+      ]);
+      return;
+    }
+    // fallback
+    alert("PDF export engine not found. Fallback: Print dialog will open.");
+    window.print();
+  }
+
+  async function onCopySummary(e){
+    e && e.preventDefault();
+    const txt = buildExecutiveSummary();
+    const ok = await copyToClipboard(txt);
+    if (!ok) alert("Copy failed. (Browser denied clipboard)");
+  }
+
+  function bind(){
+    const b1 = $("btnExportPDF");
+    const b2 = $("btnCopySummary");
+    const b3 = $("btnEmailSnapshot");
+
+    if (b1) b1.addEventListener("click", function(e){ e.preventDefault(); exportSimplePDF(); });
+    if (b2) b2.addEventListener("click", onCopySummary);
+    if (b3) b3.addEventListener("click", function(e){ e.preventDefault(); mailtoSnapshot(); });
+  }
+
+  // bind after DOM ready
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+
+  // expose tiny api if needed later
+  window.ZeroProductionActions = { buildExecutiveSummary, exportSimplePDF, mailtoSnapshot };
+})();
+
