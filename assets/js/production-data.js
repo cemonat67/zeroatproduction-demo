@@ -1,3 +1,77 @@
+/* ZP_MODAL_INJECTOR_V1
+   - injects assets/css/zp-modal.css and assets/js/zp-modal.js at runtime
+   - then binds standardized modal behavior for manualModal + wwModal
+*/
+(function ZP_MODAL_INJECTOR_V1(){
+  if (window.__ZP_MODAL_INJECTOR_V1__) return;
+  window.__ZP_MODAL_INJECTOR_V1__ = true;
+
+  function injectCSS(href){
+    try{
+      if(document.querySelector('link[href*="'+href+'"]')) return;
+      var l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = href + (href.indexOf("?")>=0 ? "&" : "?") + "v=" + Date.now();
+      document.head.appendChild(l);
+    }catch(_){}
+  }
+
+  function injectJS(src, cb){
+    try{
+      if(document.querySelector('script[src*="'+src+'"]')){
+        if(cb) cb();
+        return;
+      }
+      var s = document.createElement("script");
+      s.src = src + (src.indexOf("?")>=0 ? "&" : "?") + "v=" + Date.now();
+      s.onload = function(){ cb && cb(); };
+      document.head.appendChild(s);
+    }catch(_){}
+  }
+
+  function bindWhenReady(){
+    if(!window.ZPModal || !window.ZPModal.bindModal) return false;
+
+    // Manual KPI entry
+    window.ZPModal.bindModal({
+      openBtnId: "btnOpenManualModal",
+      modalId:   "manualModal",
+      closeId:   "btnCloseManualModal",
+      cancelId:  "btnManualCancel",
+      submitId:  "btnManualSubmit"
+    });
+
+    // Wastewater entry
+    window.ZPModal.bindModal({
+      openBtnId: "btnOpenWWModal",
+      modalId:   "wwModal",
+      closeId:   "btnWWClose",
+      cancelId:  "btnWWCancel",
+      submitId:  "btnWWSubmit"
+    });
+
+    console.log("[ZPModal] bind ok (manualModal + wwModal)");
+    return true;
+  }
+
+  injectCSS("assets/css/zp-modal.css");
+
+  injectJS("assets/js/zp-modal.js", function(){
+    // try bind now; if DOM not ready, retry shortly
+    if(bindWhenReady()) return;
+
+    var attempt = 0;
+    (function loop(){
+      attempt++;
+      if(bindWhenReady()) return;
+      if(attempt > 50) return; // ~5s
+      setTimeout(loop, 100);
+    })();
+  });
+})();
+
+
+console.log("[ZP] boot: supabaseClient=", typeof window.supabaseClient, "supabase=", typeof window.supabase);
 /* Zero@Production v1 — data layer (Supabase + cache) */
 (function () {
   const KEY = "ZP_V1_CACHE";
@@ -63,7 +137,6 @@
   
 
     // LIVE_BADGE_RUNTIME_V1
-    }
 }
 
   async function fetchLive() {
@@ -412,6 +485,64 @@ window.ZeroProductionV1 = { boot };
 
   // expose tiny api if needed later
   window.ZeroProductionActions = { buildExecutiveSummary, exportSimplePDF, mailtoSnapshot };
+
+
+/* WW_MODAL_BIND_V2_START — minimal, deterministic */
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  function openWW(e){
+    if (e) e.preventDefault();
+    const m = $("wwModal");
+    if (!m) return;
+    m.style.display = "flex";
+
+    const d = $("ww_date");
+    if (d && !d.value){
+      d.value = new Date().toISOString().slice(0,10);
+    }
+    const st = $("wwStatus");
+    if (st) st.textContent = "";
+  }
+
+  function closeWW(e){
+    if (e) e.preventDefault();
+    const m = $("wwModal");
+    if (!m) return;
+    m.style.display = "none";
+  }
+
+  function bind(){
+    const m = $("wwModal");
+    const openBtn = $("btnOpenWWModal");
+    const cancelBtn = $("btnWWCancel");
+    const closeBtn = $("btnWWClose");
+
+    // if missing, do nothing (page may not have WW modal)
+    if (!m || !openBtn) return;
+
+    // idempotent: mark once
+    if (openBtn.dataset.wwBound === "1") return;
+    openBtn.dataset.wwBound = "1";
+
+    openBtn.addEventListener("click", openWW);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeWW);
+    if (closeBtn) closeBtn.addEventListener("click", closeWW);
+
+    // click outside closes
+    m.addEventListener("click", function(ev){
+      if (ev && ev.target === m) closeWW(ev);
+    });
+
+    console.log("[WW] bind ok (#btnOpenWWModal -> #wwModal)");
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+})();
+/* WW_MODAL_BIND_V2_END */
+
+
 })();
 
 
@@ -445,6 +576,7 @@ async function insertManualEntry(payload){
 
 function wireManualModal(){
   const modal = document.getElementById("manualModal");
+  if (!modal) return; // legacy modal removed
   const openBtn = document.getElementById("btnOpenManualModal");
   const closeBtn = document.getElementById("btnCloseManualModal");
   const cancelBtn = document.getElementById("btnManualCancel");
@@ -452,13 +584,6 @@ function wireManualModal(){
 
   function open(){
     if (!modal) return;
-    // prefill from main inputs if exists
-    const mainPid = document.getElementById("inpPassportId");
-    const mainFac = document.getElementById("inpFacility");
-    const pid = document.getElementById("mPassportId");
-    const fac = document.getElementById("mFacility");
-    if (pid && mainPid && !_zapTrim(pid.value)) pid.value = _zapTrim(mainPid.value);
-    if (fac && mainFac && !_zapTrim(fac.value)) fac.value = _zapTrim(mainFac.value);
 
     _zapSet("manualStatus", "");
     modal.style.display = "flex";
@@ -476,37 +601,36 @@ function wireManualModal(){
     ev && ev.preventDefault && ev.preventDefault();
     try{
       _zapSet("manualStatus", "Saving…");
-      const pid = _zapTrim(document.getElementById("mPassportId")?.value);
+      const sample_date = _zapTrim(document.getElementById("mSampleDate")?.value);
       const fac = _zapTrim(document.getElementById("mFacility")?.value);
-      const per = _zapTrim(document.getElementById("mPeriod")?.value);
-      const prod = _zapNum(document.getElementById("mProductionKg")?.value);
-      const en   = _zapNum(document.getElementById("mEnergyKwh")?.value);
-      const w    = _zapNum(document.getElementById("mWaterM3")?.value);
+      const parameter_code = _zapTrim(document.getElementById("mParamCode")?.value);
+      const value = _zapTrim(document.getElementById("mValue")?.value);
+      const unit = _zapTrim(document.getElementById("mUnit")?.value);
+      const notes = _zapTrim(document.getElementById("mNotes")?.value);
 
-      if (!pid) throw new Error("passport_id is required");
-      if (!validPeriod(per)) throw new Error("period must be YYYY-MM");
-      if (prod < 0 || en < 0 || w < 0) throw new Error("values must be non-negative");
+      if (!sample_date) throw new Error("sample_date is required");
+      if (!parameter_code) throw new Error("parameter_code is required");
+      if (!value) throw new Error("value is required");
 
       const client_id = (window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()));
       const row = {
-        passport_id: pid,
-        facility: fac || null,
-        period: per,
-        production_kg: prod,
-        energy_kwh: en,
-        water_m3: w,
-        source: "manual_ui",
-        client_id,
-        meta: { ui: "zero@production", note: "manual entry demo" }
-      };
+          sample_date,
+          facility: fac || "Ekoten",
+          sampling_point: "MAIN_OUTLET",
+          discharge_route: "SEWER",
+          parameter_code,
+          parameter_tr: parameter_code,
+          value,
+          unit,
+          measured_flag: "MANUAL",
+          notes
+        };
 
       const res = await insertManualEntry(row);
-      _zapSet("manualStatus", `Saved ✓ (${res.id})`);
+      _zapSet("manualStatus", "Saved ✓");
 
       // refresh live read automatically
-      const mainPid = document.getElementById("inpPassportId");
       const mainFac = document.getElementById("inpFacility");
-      if (mainPid) mainPid.value = pid;
       if (mainFac && fac) mainFac.value = fac;
 
       // small delay so user sees success

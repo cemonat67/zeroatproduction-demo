@@ -1,9 +1,23 @@
+console.log("[WW] manual-entry-wastewater.js LOADED v=WWME_1777777777");
 /* Zero@Production — Manual Entry (Wastewater) v2 (stable)
-   - Opens modal via #btnOpenManualModal (no tab hijack)
-   - Writes to public.wastewater_desarj via Supabase REST
+   - Opens modal via #btnOpenWWModal (no tab hijack)
+   - Writes to public.wastewater_desarj_stg via Supabase REST
    - Renders small preview under Ingestion
 */
+
 (function(){
+  if (!window.supabaseClient) {
+    if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+      window.supabaseClient = window.supabase.createClient(
+        window.SUPABASE_URL,
+        window.SUPABASE_ANON_KEY
+      );
+      console.log("[WW] supabaseClient auto-initialized");
+    } else {
+      console.warn("[WW] Supabase config missing");
+    }
+  }
+
   const $ = (q, root=document)=>root.querySelector(q);
   const $$ = (q, root=document)=>Array.from(root.querySelectorAll(q));
   const esc = (s)=>String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
@@ -48,7 +62,7 @@
         <div class="ww-head">
           <div>
             <div class="ww-title">Manual Entry — Wastewater Discharge</div>
-            <div class="ww-sub">Writes to <code>public.wastewater_desarj</code></div>
+            <div class="ww-sub">Writes to <code>public.wastewater_desarj_stg</code></div>
           </div>
           <button class="ww-x" id="wwCloseX" aria-label="Close">×</button>
         </div>
@@ -145,10 +159,10 @@
 
 
   function bind(){
-    const btn = document.getElementById("btnOpenManualModal");
+    const btn = document.getElementById("btnOpenWWModal");
     if (btn){
       btn.addEventListener("click", (e)=>{ e.preventDefault(); openModal(); }, { capture:true });
-      console.log("[WW] bound to #btnOpenManualModal");
+      console.log("[WW] bound to #btnOpenWWModal");
       return true
     }
     return false
@@ -162,7 +176,7 @@
   console.log("[WW] LOADED v2");
 })();
 
-// ---- PATCH: bind to #tabManual AND #btnOpenManualModal (capture) ----
+// ---- PATCH: bind to #tabManual AND #btnOpenWWModal (capture) ----
 (function(){
   function _wwBind2(){
     try{
@@ -175,14 +189,14 @@
         console.log("[WW] PATCH bound to #tabManual (capture)");
       }
 
-      const btn = document.getElementById("btnOpenManualModal");
+      const btn = document.getElementById("btnOpenWWModal");
       if (btn && !btn.__WW_BOUND){
         btn.__WW_BOUND = true;
         btn.addEventListener("click", function(e){
           e.preventDefault();
           try{ (window.__WW_openModal||openModal)(); }catch(err){ console.warn("[WW] openModal failed", err); }
         }, { capture:true });
-        console.log("[WW] PATCH bound to #btnOpenManualModal (capture)");
+        console.log("[WW] PATCH bound to #btnOpenWWModal (capture)");
       }
     }catch(e){
       console.warn("[WW] PATCH bind error", e);
@@ -196,7 +210,69 @@
   setTimeout(_wwBind2, 900);
 
 
-// __WW_DELEGATE_V1__ (hard fix: close/save must always work)
+
+  // --- WW: Supabase write (MVP) ---
+  async function saveToSupabase(){
+    if (!window.supabaseClient) throw new Error("supabaseClient missing");
+
+    // Header fields (modal)
+    const sample_date = (document.getElementById("wwSampleDate")?.value || "").trim();
+    const facility = (document.getElementById("wwFacility")?.value || "Ekoten").trim() || "Ekoten";
+    const sampling_point = (document.getElementById("wwSamplingPoint")?.value || "MAIN_OUTLET").trim() || "MAIN_OUTLET";
+    const discharge_route = (document.getElementById("wwDischargeRoute")?.value || "SEWER").trim() || "SEWER";
+    const notes = (document.getElementById("wwNotes")?.value || "UI manual insert").trim();
+
+    if (!sample_date) throw new Error("sample_date is required");
+
+    // Parameter rows (table)
+    const tbody = document.querySelector("#wwParams tbody") || document.querySelector("#wwParamsBody") || null;
+    const rows = tbody ? Array.from(tbody.querySelectorAll("tr")) : Array.from(document.querySelectorAll("tr.ww-param-row"));
+
+        function getVal(tr, sel){
+      const el = tr.querySelector(sel);
+      return (el && ("value" in el) ? el.value : (el?.textContent || "")).trim();
+    }
+
+    const payloads = []
+    for (const tr of rows){
+      const code = getVal(tr, 'input[name="parameter_code"], input[data-field="parameter_code"], input.param-code, td[data-col="parameter_code"] input');
+      const value = getVal(tr, 'input[name="value"], input[data-field="value"], input.param-value, td[data-col="value"] input');
+      const unit  = getVal(tr, 'input[name="unit"], input[data-field="unit"], input.param-unit, td[data-col="unit"] input');
+
+      if (!code && !value && !unit) continue; // empty row
+      if (!code) throw new Error("parameter_code is required");
+      if (!value) throw new Error("value is required");
+
+      payloads.push({
+        "sample_date": sample_date,
+        "facility": facility,
+        "sampling_point": sampling_point,
+        "discharge_route": discharge_route,
+        "parameter_code": code,
+        "parameter_tr": code,
+        "value": value,
+        "unit": (unit || null),
+        "measured_flag": "MANUAL",
+        "notes": notes
+      });
+    }
+
+    if (!payloads.length){
+      throw new Error("No parameter rows to save");
+    }
+
+    const { data, error } = await window.supabaseClient
+      .from("wastewater_desarj_stg")
+      .insert(payloads);
+
+    if (error) throw error;
+
+    console.log("[WW] saved rows:", data?.length || 0, data);
+    return data;
+  }
+
+
+  // __WW_DELEGATE_V1__ (hard fix: close/save must always work)
 document.addEventListener("click", async (e)=>{
   const t = e.target;
   if (!t) return;
@@ -225,13 +301,19 @@ document.addEventListener("click", async (e)=>{
     return;
   }
 }, true);
-
-// Escape closes
-document.addEventListener("keydown", (e)=>{
-  if (e.key === "Escape"){
-    const m = document.getElementById("wwModal");
-    if (m) m.classList.remove("is-open");
-  }
-});
-
+  // Escape closes (disabled — handled by ZPModal global ESC)
 })();
+
+// ---- WW: expose for inline onclick ----
+try {
+  if (typeof saveToSupabase === "function") window.saveToSupabase = saveToSupabase;
+  if (typeof addRow === "function") window.addRow = addRow;
+  if (typeof clearRows === "function") window.clearRows = clearRows;
+  console.log("[WW] globals exposed:", {
+    saveToSupabase: typeof window.saveToSupabase,
+    addRow: typeof window.addRow,
+    clearRows: typeof window.clearRows
+  });
+} catch (e) {
+  console.error("[WW] expose globals failed", e);
+}
