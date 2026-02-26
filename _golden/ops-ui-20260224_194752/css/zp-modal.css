@@ -1,0 +1,101 @@
+/* Zero@Production — Modal Shell v1
+   Single source of truth for modal overlay/panel behavior.
+   NOTE: index.html untouched. Classes will be added via JS adapter.
+*/
+
+:root{
+  --zp-modal-z: 100000;
+  --zp-modal-overlay: rgba(0,0,0,.45);
+  --zp-panel-bg: #ffffff;
+  --zp-panel-text: #0f172a;
+  --zp-header-bg: #02154e;
+  --zp-header-text: #ffffff;
+  --zp-accent: #f9ba00;
+  --zp-border: #e6e7eb;
+}
+
+/* Overlay */
+.zp-modal{
+  display: none;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: var(--zp-modal-z) !important;
+  background: var(--zp-modal-overlay) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+}
+
+/* Open state (JS will toggle this) */
+.zp-modal.is-open{
+  display: flex !important;
+}
+
+/* Panel */
+.zp-modal__panel{
+  width: 100%;
+  max-width: 720px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--zp-panel-bg) !important;
+  color: var(--zp-panel-text) !important;
+  box-shadow: 0 18px 50px rgba(0,0,0,.25);
+}
+
+/* Header */
+.zp-modal__header{
+  background: var(--zp-header-bg) !important;
+  color: var(--zp-header-text) !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+
+/* Close button */
+.zp-modal__close{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  color: var(--zp-accent) !important;
+  background: rgba(255,255,255,.08) !important;
+}
+
+/* Body */
+.zp-modal__body{
+  padding: 16px !important;
+  background: var(--zp-panel-bg) !important;
+  color: var(--zp-panel-text) !important;
+}
+
+/* Footer */
+.zp-modal__footer{
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  margin-top: 14px !important;
+}
+
+/* Generic inputs inside modal should look sane (kills WW glass look) */
+.zp-modal__body input,
+.zp-modal__body select,
+.zp-modal__body textarea{
+  background: #ffffff !important;
+  color: var(--zp-panel-text) !important;
+  border: 1px solid var(--zp-border) !important;
+}
+
+/* iPad/Safari friendly: prevent page scroll when modal open (JS toggles body class) */
+body.zp-modal-open{
+  overflow: hidden !important;
+  touch-action: none !important;
+}

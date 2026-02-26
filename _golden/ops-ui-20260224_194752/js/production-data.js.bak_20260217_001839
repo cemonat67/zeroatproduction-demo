@@ -1,0 +1,63 @@
+/* Zero@Production v1 — data layer (Supabase + cache) */
+(function () {
+  const KEY = "ZP_V1_CACHE";
+  const TTL_MS = 5 * 60 * 1000; // 5 min
+
+  function now() { return Date.now(); }
+
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.ts) return null;
+      if (now() - obj.ts > TTL_MS) return null;
+      return obj.data || null;
+    } catch { return null; }
+  }
+
+  function writeCache(data) {
+    try { localStorage.setItem(KEY, JSON.stringify({ ts: now(), data })); } catch {}
+  }
+
+  function setText(sel, txt) {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = txt;
+  }
+
+  function setHealth(state, lastSync) {
+    setText("#ctoHealth", state);
+    setText("#ctoSub", lastSync ? `Last sync: ${lastSync}` : "Offline mode active");
+  }
+
+  function render(data, mode) {
+    setText("#ceoScore", (data?.scorePct ?? 75) + "%");
+    setText("#cfoImpact", "€ " + (data?.eurYear ?? 477440).toLocaleString("en-GB"));
+    setHealth(data?.health ?? (mode === "offline" ? "DEGRADED" : "OK"), data?.lastSyncISO ?? null);
+  }
+
+  async function fetchLive() {
+    // V1 placeholder — next step: hook to Supabase REST
+    return {
+      scorePct: 75,
+      eurYear: 477440,
+      health: "OK",
+      lastSyncISO: new Date().toISOString()
+    };
+  }
+
+  async function boot() {
+    const cached = readCache();
+    if (cached) { render(cached, "cache"); return; }
+
+    try {
+      const live = await fetchLive();
+      writeCache(live);
+      render(live, "live");
+    } catch (e) {
+      render(null, "offline");
+    }
+  }
+
+  window.ZeroProductionV1 = { boot };
+})();

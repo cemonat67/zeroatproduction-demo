@@ -1,0 +1,65 @@
+/* Zero@Production — Manual Entry (Wastewater) v2 (stable)
+   - Opens modal via #btnOpenManualModal (no tab hijack)
+   - Writes to public.wastewater_desarj via Supabase REST
+   - Renders small preview under Ingestion
+*/
+(function(){
+  const $ = (q, root=document)=>root.querySelector(q);
+  const $$ = (q, root=document)=>Array.from(root.querySelectorAll(q));
+  const esc = (s)=>String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+
+  function getSB(){
+    const url =
+      window.SUPABASE_URL ||
+      window.__SUPABASE_URL ||
+      (window.ZAE && window.ZAE.SUPABASE_URL) ||
+      localStorage.getItem("SUPABASE_URL") || "";
+    const key =
+      window.SUPABASE_ANON_KEY ||
+      window.__SUPABASE_ANON_KEY ||
+      (window.ZAE && window.ZAE.SUPABASE_ANON_KEY) ||
+      localStorage.getItem("SUPABASE_ANON_KEY") || "";
+    return { url, key };
+  }
+
+  function toast(msg, kind="info"){
+    console.log("[WW]", msg);
+    let t = $("#wwToast");
+    if(!t){
+      t = document.createElement("div");
+      t.id = "wwToast";
+      t.style.cssText = "position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:99999;background:#02154e;color:#fff;padding:10px 14px;border-radius:10px;font:14px system-ui;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transition:.2s;";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = "1";
+    t.style.background = (kind==="err") ? "#D51635" : (kind==="ok" ? "#005530" : "#02154e");
+    clearTimeout(window.__WW_TOAST_T);
+    window.__WW_TOAST_T = setTimeout(()=>{ t.style.opacity="0"; }, 2200);
+  }
+
+  function ensureModal(){
+    if ($("#wwModal")) return;
+
+    const wrap = document.createElement("div");
+    wrap.id = "wwModal";
+    wrap.innerHTML = `
+      <div class="ww-backdrop"></div>
+      <div class="ww-panel" role="dialog" aria-modal="true">
+        <div class="ww-head">
+          <div>
+            <div class="ww-title">Manual Entry — Wastewater Discharge</div>
+            <div class="ww-sub">Writes to <code>public.wastewater_desarj</code></div>
+          </div>
+          <button class="ww-x" id="wwCloseX" aria-label="Close">×</button>
+        </div>
+
+        <div class="ww-grid">
+          <label class="ww-field">
+            <span>Sample date <b>*</b></span>
+            <input id="wwSampleDate" type="date" />
+          </label>
+          <label class="ww-field">
+            <span>Facility <b>*</b></span>
+            <input id="wwFacility" placeholder="e.g., Ekoten (Izmir)" />
+          </label>

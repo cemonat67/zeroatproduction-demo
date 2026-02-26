@@ -1,0 +1,205 @@
+// assets/js/exec-bridge.js — Phase 2 (Executive listener)
+(function(){
+  const KEY = "ZERO_RISK_V1";
+
+  function byId(id){ return document.getElementById(id); }
+
+  function setDot(status){
+    const dot = byId("execRiskDot");
+    if(!dot) return;
+    dot.className = "risk-dot " + String(status || "OK").toLowerCase();
+    dot.title = "CFO Shock: " + status;
+  }
+
+  function setBanner(status){
+    const host = byId("execRiskBanner");
+    if(!host) return;
+    if(status === "ACTION"){
+      host.style.display = "block";
+      host.textContent = "EXECUTIVE ALERT — CFO SHOCK CRITICAL";
+    } else {
+      host.style.display = "none";
+      host.textContent = "";
+    }
+  }
+
+  function apply(risk){
+    if(!risk || !risk.cfoShock) return;
+    const s = risk.cfoShock.status;
+    setDot(s);
+    setBanner(s);
+    if(s === "ACTION"){ window.__GAUGE_OVERRIDE__ = true; }
+  }
+
+  // Event bus (same page)
+  window.addEventListener("zero:risk-update", function(e){
+    apply(e && e.detail ? e.detail : null);
+  });
+
+  // Cross-page propagation (ops → exec)
+  window.addEventListener("storage", function(e){
+    if(!e || e.key !== KEY) return;
+    try{
+      apply(JSON.parse(e.newValue || "{}"));
+    } catch(_e){}
+  });
+
+  // Initial paint
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) apply(JSON.parse(raw));
+  } catch(_e){}
+})();
+
+/* === ZERO_RISK POLL PATCH (demo-safe) === */
+(function(){
+  if(!window.__ZERO_RISK__) return;
+
+  const KEY = "ZERO_RISK_V1";
+  function getDot(){ return document.getElementById("execRiskDot"); }
+
+function ensureDotTopLayer(){
+  try{
+    var dot=getDot();
+    if(!dot) return;
+
+    /* Safari stacking-context killer: make dot a direct child of body */
+    if(dot.parentElement !== document.body){
+      document.body.appendChild(dot);
+    }
+
+    /* Hard lock on-screen */
+    dot.style.setProperty("position","fixed","important");
+    dot.style.setProperty("transform","none","important");
+    dot.style.setProperty("margin","0","important");
+    dot.style.setProperty("inset","auto","important");
+    dot.style.setProperty("top","14px","important");
+    dot.style.setProperty("right","auto","important");
+    dot.style.setProperty("left",(window.innerWidth - 28) + "px","important");
+    dot.style.setProperty("width","14px","important");
+    dot.style.setProperty("height","14px","important");
+        dot.style.setProperty("border-radius","50%","important");
+    dot.style.setProperty("z-index","2147483647","important");
+    dot.style.setProperty("pointer-events","none","important");
+    dot.style.setProperty("box-shadow","0 0 0 3px rgba(255,0,0,.18)","important");
+      dot.style.setProperty("display","block","important");
+      dot.style.setProperty("visibility","visible","important");
+      dot.style.setProperty("opacity","1","important");
+
+
+    /* State -> color map (reads localStorage: ZERO_RISK_V1) */
+    try{
+      var raw = localStorage.getItem("ZERO_RISK_V1");
+      var st = null;
+      if(raw){
+        var obj = JSON.parse(raw);
+        st = obj && obj.cfoShock ? obj.cfoShock.status : null;
+      }
+      var bg = "#9CA3AF"; /* default OFFLINE/unknown */
+      if(st==="OK") bg = "#1F9D55";
+      else if(st==="MONITOR") bg = "#F9BA00";
+      else if(st==="ACTION") bg = "#D51635";
+      dot.style.setProperty("background", bg, "important");
+    }catch(e){}
+  }catch(e){ console.warn("[DOT] ensureDotTopLayer failed", e); }
+}
+
+
+  function apply(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      const dot = getDot();
+      if(!raw || !dot) return;
+      const data = JSON.parse(raw);
+      const st = data && data.cfoShock ? data.cfoShock.status : null;
+      if(!st) return;
+
+      dot.classList.remove("ok","monitor","action");
+      const s = String(st).toLowerCase();
+      dot.classList.add(s);
+const banner = document.getElementById("execBanner");
+      if(banner){
+        banner.style.display = (s === "action") ? "block" : "none";
+      }
+    }catch(e){}
+  }
+
+  setInterval(apply, 1000);
+  document.addEventListener("DOMContentLoaded", apply);
+
+/* DOT TOP-LAYER GUARD (demo-safe) */
+(function dotTopLayerGuard(){
+  var tries=0;
+  function tick(){
+    try{ ensureDotTopLayer(); }catch(e){}
+    tries++;
+    if(tries<120) setTimeout(tick, 250);
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", tick);
+  } else {
+    tick();
+  }
+})();
+
+
+/* DOT REFRESH HOOK (demo-safe) */
+(function dotRefreshHook(){
+  var tries=0;
+  function hook(){
+    try{
+      if(!window.__ZERO_RISK__ || !window.__ZERO_RISK__.setCfoShock) return false;
+      if(window.__ZERO_RISK__.__dotHooked) return true;
+
+      var orig = window.__ZERO_RISK__.setCfoShock;
+      window.__ZERO_RISK__.setCfoShock = function(){
+        var r;
+        try{ r = orig.apply(this, arguments); }catch(e){ r = undefined; }
+        try{ ensureDotTopLayer(); }catch(e){}
+        return r;
+      };
+
+      window.__ZERO_RISK__.__dotHooked = true;
+      try{ ensureDotTopLayer(); }catch(e){}
+      return true;
+    }catch(_e){ return false; }
+  }
+  (function loop(){
+    if(hook()) return;
+    tries++;
+    if(tries < 120) setTimeout(loop, 250);
+  })();
+})();
+
+})();
+
+/* === DIRECT DOT PAINTER === */
+(function(){
+  function paintDot(status){
+    try{
+      var dot = document.getElementById("execRiskDot");
+      if(!dot) return;
+
+      dot.classList.remove("ok","monitor","action");
+
+      var s = String(status || "").toLowerCase();
+
+      if(s === "action"){
+        dot.style.background = "#D51635";
+      }else if(s === "monitor"){
+        dot.style.background = "#f9ba00";
+      }else{
+        dot.style.background = "#1f7a3e";
+      }
+    }catch(e){}
+  }
+
+  if(window.__ZERO_RISK__ && window.__ZERO_RISK__.setCfoShock){
+    var orig = window.__ZERO_RISK__.setCfoShock;
+    window.__ZERO_RISK__.setCfoShock = function(status){
+      var r = orig.apply(this, arguments);
+      paintDot(status);
+      return r;
+    };
+  }
+})();

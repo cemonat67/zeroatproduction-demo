@@ -1,0 +1,67 @@
+// assets/js/exec-bridge.js — Executive risk listener (CLEAN / demo-safe)
+(function(){
+  const KEY = "ZERO_RISK_V1";
+
+  function byId(id){ return document.getElementById(id); }
+
+  function setDot(status){
+    const dot = byId("execRiskDot");
+    if(!dot) return;
+
+    if(!status){
+      dot.className = "risk-dot";
+      dot.title = "CFO Shock: OFFLINE";
+      return;
+    }
+
+    const s = String(status).toLowerCase();
+    dot.className = "risk-dot " + s;
+    dot.title = "CFO Shock: " + String(status);
+  }
+
+  function setBanner(status){
+    const host = byId("execRiskBanner");
+    if(!host) return;
+
+    const s = status ? String(status).toUpperCase() : "";
+    if(s === "ACTION"){
+      host.style.display = "block";
+      host.textContent = "EXECUTIVE ALERT — CFO SHOCK CRITICAL";
+    } else {
+      host.style.display = "none";
+      host.textContent = "";
+    }
+  }
+
+  function apply(risk){
+    const s = (risk && risk.cfoShock) ? risk.cfoShock.status : null;
+    if(!s){
+      setDot(null);
+      setBanner(null);
+      return;
+    }
+    setDot(s);
+    setBanner(s);
+    if(String(s).toUpperCase() === "ACTION"){ window.__GAUGE_OVERRIDE__ = true; }
+  }
+
+  // Same-page events
+  window.addEventListener("zero:risk-update", function(e){
+    apply(e && e.detail ? e.detail : null);
+  });
+
+  // Cross-tab/page propagation
+  window.addEventListener("storage", function(e){
+    if(!e || e.key !== KEY) return;
+    try{ apply(JSON.parse(e.newValue || "{}")); }catch(_e){}
+  });
+
+  // Initial paint
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) apply(JSON.parse(raw));
+    else apply(null);
+  }catch(_e){
+    apply(null);
+  }
+})();

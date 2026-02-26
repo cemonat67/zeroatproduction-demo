@@ -1,0 +1,52 @@
+// assets/js/exec-bridge.js — Phase 2 (Executive listener)
+(function(){
+  const KEY = "ZERO_RISK_V1";
+
+  function byId(id){ return document.getElementById(id); }
+
+  function setDot(status){
+    const dot = byId("execRiskDot");
+    if(!dot) return;
+    dot.className = "risk-dot " + String(status || "OK").toLowerCase();
+    dot.title = "CFO Shock: " + status;
+  }
+
+  function setBanner(status){
+    const host = byId("execRiskBanner");
+    if(!host) return;
+    if(status === "ACTION"){
+      host.style.display = "block";
+      host.textContent = "EXECUTIVE ALERT — CFO SHOCK CRITICAL";
+    } else {
+      host.style.display = "none";
+      host.textContent = "";
+    }
+  }
+
+  function apply(risk){
+    if(!risk || !risk.cfoShock) return;
+    const s = risk.cfoShock.status;
+    setDot(s);
+    setBanner(s);
+    if(s === "ACTION"){ window.__GAUGE_OVERRIDE__ = true; }
+  }
+
+  // Event bus (same page)
+  window.addEventListener("zero:risk-update", function(e){
+    apply(e && e.detail ? e.detail : null);
+  });
+
+  // Cross-page propagation (ops → exec)
+  window.addEventListener("storage", function(e){
+    if(!e || e.key !== KEY) return;
+    try{
+      apply(JSON.parse(e.newValue || "{}"));
+    } catch(_e){}
+  });
+
+  // Initial paint
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) apply(JSON.parse(raw));
+  } catch(_e){}
+})();

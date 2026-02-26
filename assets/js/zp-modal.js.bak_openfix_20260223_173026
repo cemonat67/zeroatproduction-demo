@@ -1,0 +1,177 @@
+/* Zero@Production — Modal Engine v1
+   - Does NOT require index.html edits
+   - Works by adding classes to existing modal markup
+   - Single open/close behavior for all modals
+*/
+(function(){
+  if (window.ZPModal) return;
+
+  function $(id){ return document.getElementById(id); }
+
+  function lockScroll(on){
+    try{
+      if(on) document.body.classList.add("zp-modal-open");
+      else document.body.classList.remove("zp-modal-open");
+    }catch(_){}
+  }
+
+  function openModal(modalId){
+    const m = $(modalId);
+    if(!m) return false;
+    m.classList.add("is-open");
+    lockScroll(true);
+    
+      // FORCE WW header X injection (robust)
+      try{
+        if(modalId === "wwModal"){
+          var wwClose = panel.querySelector("#btnWWClose");
+          if(wwClose){
+            var wwHeader = wwClose.parentElement;
+            if(wwHeader && !wwHeader.querySelector("[data-zp-x]")){
+              var x = document.createElement("a");
+              x.href = "#";
+              x.setAttribute("data-zp-x","1");
+              x.textContent = "\\u2715";
+              x.className = "zp-modal__close";
+              x.style.marginLeft = "auto";
+              x.addEventListener("click", function(e){
+                e.preventDefault();
+                closeModal("wwModal");
+              }, true);
+              wwHeader.appendChild(x);
+            }
+          }
+        }
+      }catch(_){}
+
+      return true;
+  }
+
+  function closeModal(modalId){
+    const m = $(modalId);
+    if(!m) return false;
+    m.classList.remove("is-open");
+    // if no other modals are open, unlock
+    const anyOpen = document.querySelector(".zp-modal.is-open");
+    if(!anyOpen) lockScroll(false);
+    return true;
+  }
+
+  // Apply our standardized shell classes onto existing markup
+  // Assumes structure: #modal > .zae-modal__panel > headerDiv + bodyDiv
+  function applyShell(modalId, opts){
+    const m = $(modalId);
+    if(!m) return false;
+
+    m.classList.add("zp-modal");
+
+    const panel = m.querySelector(".zae-modal__panel") || m.firstElementChild;
+    if(panel) panel.classList.add("zp-modal__panel");
+
+    // header = first child of panel (existing header div)
+    const header = panel ? panel.firstElementChild : null;
+    if(header) header.classList.add("zp-modal__header");
+
+    // body = second child of panel (existing content wrapper)
+    const body = panel ? header && header.nextElementSibling : null;
+    if(body) body.classList.add("zp-modal__body");
+      // ensure a visible "X" in header without touching index.html
+      try{
+        if(header && !header.querySelector('[data-zp-x]')){
+          var x = document.createElement("a");
+          x.href = "#";
+          x.setAttribute("data-zp-x","1");
+          x.setAttribute("aria-label","Close");
+          x.textContent = "\u2715"; // ✕ (unicode-safe)
+          x.className = "zp-modal__close";
+          x.addEventListener("click", function(e){
+            e.preventDefault();
+            closeModal(modalId);
+          }, true);
+          header.appendChild(x);
+        }
+      }catch(_){}
+
+
+    // close buttons (X / Close / Cancel) -> style as close if requested
+    const closeEl = (opts && opts.closeId && $(opts.closeId)) || null;
+    if(closeEl) closeEl.classList.add("zp-modal__close");
+
+    // footer wrapper: try to find container holding cancel/submit
+    // We tag the nearest parent DIV around cancel/submit as footer.
+    const footerAnchorId = (opts && (opts.cancelId || opts.submitId)) || null;
+    const footerAnchor = footerAnchorId ? $(footerAnchorId) : null;
+    if(footerAnchor){
+      const footer = footerAnchor.closest("div");
+      if(footer) footer.classList.add("zp-modal__footer");
+    }
+
+    return true;
+  }
+
+  function bindModal(cfg){
+    const openBtn = cfg && cfg.openBtnId ? $(cfg.openBtnId) : null;
+    const modalId = cfg && cfg.modalId ? cfg.modalId : null;
+    if(!modalId) return false;
+
+    // Apply shell classes once
+    applyShell(modalId, cfg);
+
+    if(openBtn){
+      openBtn.addEventListener("click", function(e){
+        e.preventDefault();
+        openModal(modalId);
+      }, true);
+    }
+
+    const closeIds = [];
+    if(cfg && cfg.closeId) closeIds.push(cfg.closeId);
+    if(cfg && cfg.cancelId) closeIds.push(cfg.cancelId);
+
+    closeIds.forEach(function(id){
+      const el = $(id);
+      if(!el) return;
+      el.addEventListener("click", function(e){
+        e.preventDefault();
+        closeModal(modalId);
+      }, true);
+    });
+
+    // click-outside: only if you click the overlay itself
+    const m = $(modalId);
+    if(m){
+      const outsideHandler = function(ev){
+        if(ev && ev.target === m){
+          closeModal(modalId);
+        }
+      };
+      m.addEventListener("mousedown", outsideHandler, true);
+      m.addEventListener("touchstart", outsideHandler, {capture:true, passive:true});
+    }
+    return true;
+  }
+
+  
+    // Global ESC handler (capture) — single source of truth
+    (function bindEscOnce(){
+      try{
+        if (window.__ZP_ESC_BOUND__) return;
+        window.__ZP_ESC_BOUND__ = true;
+        document.addEventListener("keydown", function(ev){
+          try{
+            if(!ev) return;
+            if(ev.key !== "Escape" && ev.key !== "Esc") return;
+            // Close the top-most open modal
+            var top = document.querySelector(".zp-modal.is-open") ||
+                      document.getElementById("wwModal") ||
+                      document.getElementById("manualModal");
+            if(top && top.classList && top.classList.contains("is-open")){
+              closeModal(top.id);
+            }
+          }catch(_){}
+        }, true); // capture => beats other listeners
+      }catch(_){}
+    })();
+
+    window.ZPModal = { openModal, closeModal, bindModal, applyShell };
+})();

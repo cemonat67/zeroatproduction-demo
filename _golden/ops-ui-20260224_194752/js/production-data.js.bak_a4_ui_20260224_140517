@@ -1,0 +1,785 @@
+/* ZP_MODAL_INJECTOR_V1
+   - injects assets/css/zp-modal.css and assets/js/zp-modal.js at runtime
+   - then binds standardized modal behavior for manualModal + wwModal
+*/
+(function ZP_MODAL_INJECTOR_V1(){
+  if (window.__ZP_MODAL_INJECTOR_V1__) return;
+  window.__ZP_MODAL_INJECTOR_V1__ = true;
+
+  function injectCSS(href){
+    try{
+      if(document.querySelector('link[href*="'+href+'"]')) return;
+      var l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = href + (href.indexOf("?")>=0 ? "&" : "?") + "v=" + Date.now();
+      document.head.appendChild(l);
+    }catch(_){}
+  }
+
+  function injectJS(src, cb){
+    try{
+      if(document.querySelector('script[src*="'+src+'"]')){
+        if(cb) cb();
+        return;
+      }
+      var s = document.createElement("script");
+      s.src = src + (src.indexOf("?")>=0 ? "&" : "?") + "v=" + Date.now();
+      s.onload = function(){ cb && cb(); };
+      document.head.appendChild(s);
+    }catch(_){}
+  }
+
+  function bindWhenReady(){
+    if(!window.ZPModal || !window.ZPModal.bindModal) return false;
+
+    // Manual KPI entry
+    window.ZPModal.bindModal({
+      openBtnId: "btnOpenManualModal",
+      modalId:   "manualModal",
+      closeId:   "btnCloseManualModal",
+      cancelId:  "btnManualCancel",
+      submitId:  "btnManualSubmit"
+    });
+
+    // Wastewater entry
+    window.ZPModal.bindModal({
+      openBtnId: "btnOpenWWModal",
+      modalId:   "wwModal",
+      closeId:   "btnWWClose",
+      cancelId:  "btnWWCancel",
+      submitId:  "btnWWSubmit"
+    });
+
+    console.log("[ZPModal] bind ok (manualModal + wwModal)");
+    return true;
+  }
+
+  injectCSS("assets/css/zp-modal.css");
+
+  injectJS("assets/js/zp-modal.js", function(){
+    // try bind now; if DOM not ready, retry shortly
+    if(bindWhenReady()) return;
+
+    var attempt = 0;
+    (function loop(){
+      attempt++;
+      if(bindWhenReady()) return;
+      if(attempt > 50) return; // ~5s
+      setTimeout(loop, 100);
+    })();
+  });
+})();
+
+
+console.log("[ZP] boot: supabaseClient=", typeof window.supabaseClient, "supabase=", typeof window.supabase);
+/* Zero@Production v1 — data layer (Supabase + cache) */
+(function () {
+  const KEY = "ZP_V1_CACHE";
+  const TTL_MS = 5 * 60 * 1000; // 5 min
+
+  function now() { return Date.now(); }
+
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.ts) return null;
+      if (now() - obj.ts > TTL_MS) return null;
+      return obj.data || null;
+    } catch { return null; }
+  }
+
+  function writeCache(data) {
+    try { localStorage.setItem(KEY, JSON.stringify({ ts: now(), data })); } catch {}
+  }
+
+  function setText(sel, txt) {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = txt;
+  }
+
+  function setHealth(state, lastSync) {
+    setText("#ctoHealth", state);
+    setText("#ctoSub", lastSync ? `Last sync: ${lastSync}` : "Offline mode active");
+  }
+
+  function render(data, mode) {
+
+    // LIVE_BADGE_RUNTIME_V3 (data-aware)
+    (function(){
+      const badge = document.getElementById("liveBadge");
+      if (!badge) return;
+
+      if (!data) {
+        badge.textContent = "OFFLINE";
+        badge.className = "badge badge-offline";
+        return;
+      }
+
+      const m = String(mode || "");
+      if (m === "cache") {
+        badge.textContent = "CACHE";
+        badge.className = "badge badge-offline";
+      } else {
+        badge.textContent = "LIVE";
+        badge.className = "badge badge-live";
+      }
+    })();
+
+
+    
+
+
+    setText("#ceoScore", (data?.scorePct ?? 75) + "%");
+    setText("#cfoImpact", "€ " + (data?.eurYear ?? 477440).toLocaleString("en-GB"));
+    setHealth(data?.health ?? (mode === "offline" ? "DEGRADED" : "OK"), data?.lastSyncISO ?? null);
+  
+
+    // LIVE_BADGE_RUNTIME_V1
+}
+
+  async function fetchLive() {
+    // V1 placeholder — next step: hook to Supabase REST
+    return {
+      scorePct: 75,
+      eurYear: 477440,
+      health: "OK",
+      lastSyncISO: new Date().toISOString()
+    };
+  }
+
+  async function boot() {
+    const cached = readCache();
+    if (cached) { render(cached, "cache"); return; }
+
+    try {
+      const live = await fetchLive();
+      writeCache(live);
+      render(live, "live");
+    } catch (e) {
+      render(null, "offline");
+    }
+  }
+
+  
+  // LIVE_FETCH_V1_START — Supabase RPC: get_ops_payload(passport)
+  async function rpcGetOpsPayload(passportId){
+    const base = window.SUPABASE_URL || window.__SUPABASE_URL || window.ZERO_SUPABASE_URL || window.supabaseUrl;
+    const anon = window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY || window.ZERO_SUPABASE_ANON_KEY || window.supabaseAnonKey || window.SUPABASE_KEY;
+
+    if (!base || !anon) throw new Error("Supabase config missing (SUPABASE_URL / SUPABASE_ANON_KEY).");
+
+    const url = base.replace(/\/+$/,"") + "/rest/v1/rpc/get_ops_payload";
+    const headers = {
+      "apikey": anon,
+      "Authorization": "Bearer " + anon,
+      "Content-Type": "application/json"
+    ,
+      "x-zp-src": "production-data.js"};
+
+    // Single arg (DB signature locked)
+
+
+    const body = { p_passport_id: passportId };
+
+    const res = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
+
+
+    if (!res.ok){
+
+
+      const txt = await res.text().catch(()=> "");
+
+
+      throw new Error("RPC failed: " + res.status + " " + txt);
+
+
+    }
+
+
+    return await res.json();
+
+    // AUTO_LIVE_V1: if URL has ?pid=... then auto-load live once
+    try {
+      const u = new URL(location.href);
+      const pid = (u.searchParams.get("pid") || "").trim();
+      if (pid) {
+        const inp = document.getElementById("inpPassportId");
+        if (inp && !inp.value) inp.value = pid;
+        await onLoadLive({ preventDefault: function(){} });
+      }
+    } catch(e) {}
+  }
+
+  function fmtInt(x){
+    try{
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Number(x));
+    }catch(e){
+      return String(x);
+    }
+  }
+
+  function setText(id, txt){
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  }
+
+  async function onLoadLive(e){
+    e && e.preventDefault();
+    const inp = document.getElementById("inpPassportId");
+    const pid = (inp && inp.value || "").trim();
+    if (!pid){
+      alert("Passport ID required (e.g., EKOTEN-2401-B01)");
+      return;
+    }
+
+    // UI: optimistic status
+    setText("ctoHealth", "LIVE");
+    setText("ctoSub", "Fetching…");
+
+    try{
+      const data = await rpcGetOpsPayload(pid);
+
+      
+      // cache live payload for refresh/offline
+      try{ writeCache({ ts: now(), payload: data }); }catch(e){}
+// Expected structure (from your psql output):
+      // { passport_id, kpis:{total_co2_t, energy_mwh,...}, cfo:{eur_year,...}, trends_7d:[...] }
+
+      const totalCo2T = data && data.kpis && data.kpis.total_co2_t;
+      const eurYear   = data && data.cfo  && data.cfo.eur_year;
+
+      
+
+      // ZERO_CEO_KPI_INLINE_V1 — CEO card: CO₂ + Water + Energy + Risk
+
+      try {
+
+        const k = data && data.kpis;
+
+        const co2t = k && k.total_co2_t;
+
+        const water = k && k.water_m3;
+
+        let eMwh = k && k.energy_mwh;
+
+        if ((eMwh === undefined || eMwh === null) && k && k.total_energy_kwh !== undefined && k.total_energy_kwh !== null) {
+
+          eMwh = Number(k.total_energy_kwh) / 1000.0;
+
+        }
+
+        const risk = (k && k.wastewater_risk) ? String(k.wastewater_risk) : "—";
+
+      
+
+        if (co2t !== undefined && co2t !== null) setText("ceoScore", (Math.round(Number(co2t)*100)/100) + " t");
+
+        setText("ceoSub", "Total CO₂ (batch)");
+
+        const waterTxt = (water === undefined || water === null) ? "—" : (Math.round(Number(water)*10)/10);
+
+        const eTxt = (eMwh === undefined || eMwh === null) ? "—" : (Math.round(Number(eMwh)*100)/100);
+
+        setText("ceoMeta", "Water: " + waterTxt + " m³  ·  Energy: " + eTxt + " MWh  ·  Risk: " + risk);
+
+      } catch (e) {}
+// CEO card: keep label, inject a "live metric" (CO2)
+      if (totalCo2T !== undefined && totalCo2T !== null){
+        setText("ceoScore", fmtInt(totalCo2T) + " t");
+      } else {
+        setText("ceoScore", "—");
+      }
+
+      // CFO card
+      if (eurYear !== undefined && eurYear !== null){
+        setText("cfoImpact", "€ " + fmtInt(eurYear));
+      } else {
+        setText("cfoImpact", "€ —");
+      }
+
+      // CTO
+      setText("ctoHealth", "OK");
+      const now = new Date();
+      setText("ctoSub", "Live sync • " + now.toLocaleString());
+
+      // Optional: expose for debugging
+      window.__OPS_PAYLOAD = data;
+
+    
+        try{ window.__ZP_A3_HEALTH_REFRESH__ && window.__ZP_A3_HEALTH_REFRESH__(); }catch(_e){}
+}catch(err){
+      console.error(err);
+      setText("ctoHealth", "OFFLINE");
+      setText("ctoSub", "Offline — Last known data");
+      alert("Load Live failed. Check Supabase config + RPC. See console.");
+    }
+  }
+
+  // Bind button
+  (function bindLoadLive(){
+    const b = document.getElementById("btnLoadLive");
+    if (b) b.addEventListener("click", onLoadLive);
+  })();
+  // LIVE_FETCH_V1_END
+
+
+  // INGESTION_UI_V1_START
+  function showPane(which){
+    const pm = document.getElementById("paneManual");
+    const pc = document.getElementById("paneCSV");
+    if (pm) pm.style.display = (which==="manual") ? "block" : "none";
+    if (pc) pc.style.display = (which==="csv") ? "block" : "none";
+  }
+
+  function parseCsvText(txt){
+    const lines = (txt||"").split(/\r?\n/).filter(Boolean);
+    if (!lines.length) return { rows: 0, cols: 0 };
+    const head = lines[0].split(",").map(x=>x.trim());
+    return { rows: Math.max(0, lines.length-1), cols: head.length };
+  }
+
+  async function onCsvPick(inp, label){
+    const st = document.getElementById("csvStatus");
+    if (!inp || !inp.files || !inp.files[0]){
+      if (st) st.textContent = "No files loaded.";
+      return;
+    }
+    const file = inp.files[0];
+    const txt = await file.text();
+    const info = parseCsvText(txt);
+    return `${label}: ${file.name} — rows=${info.rows}, cols=${info.cols}`;
+  }
+
+  function bindIngestionUI(){
+    const tM = document.getElementById("tabManual");
+    const tC = document.getElementById("tabCSV");
+    if (tM) tM.addEventListener("click", function(e){ e.preventDefault(); showPane("manual"); });
+    if (tC) tC.addEventListener("click", function(e){ e.preventDefault(); showPane("csv"); });
+
+    // default open manual
+    showPane("manual");
+
+    const eInp = document.getElementById("csvEnergy");
+    const pInp = document.getElementById("csvProduction");
+    const st = document.getElementById("csvStatus");
+
+    async function refreshStatus(){
+      const a = await onCsvPick(eInp, "energy.csv").catch(()=>null);
+      const b = await onCsvPick(pInp, "production.csv").catch(()=>null);
+      const parts = [a,b].filter(Boolean);
+      if (st) st.textContent = parts.length ? parts.join(" • ") : "No files loaded.";
+    }
+
+    if (eInp) eInp.addEventListener("change", function(){ refreshStatus(); });
+    if (pInp) pInp.addEventListener("change", function(){ refreshStatus(); });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindIngestionUI);
+  else bindIngestionUI();
+  // INGESTION_UI_V1_END
+
+window.ZeroProductionV1 = { boot };
+})();
+
+/* ZP_ACTIONS_ENGINE_V1 */
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  function getText(id, fallback){
+    const el = $(id);
+    const t = el ? (el.textContent || "").trim() : "";
+    return t || fallback || "";
+  }
+
+  function buildExecutiveSummary(){
+    const ceoScore = getText("ceoScore", "—");
+    const cfoImpact = getText("cfoImpact", "—");
+    const ctoHealth = getText("ctoHealth", "—");
+    const ctoSub = getText("ctoSub", "");
+
+    const ts = new Date().toISOString();
+    const lines = [
+      "Zero@Production — Executive Snapshot",
+      "ML-Ready · Offline-first · iPad-safe",
+      "",
+      `CEO — Overall Score: ${ceoScore}`,
+      `CFO — Impact / Year: ${cfoImpact}`,
+      `CTO — System Health: ${ctoHealth}${ctoSub ? " ("+ctoSub+")" : ""}`,
+      "",
+      `Generated: ${ts}`,
+      "",
+      "Modules: Fibre · Yarn · Fabric · Chemicals & Dyes · Finishing · Garment · Wastewater"
+    ];
+    return lines.join("\n");
+  }
+
+  async function copyToClipboard(text){
+    // modern
+    try{
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    }catch(e){ /* fallthrough */ }
+
+    // fallback
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "readonly");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function mailtoSnapshot(){
+    const subject = encodeURIComponent("Zero@Production — Executive Snapshot");
+    const body = encodeURIComponent(buildExecutiveSummary());
+    // demo-safe: user still confirms in mail client
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }
+
+  function exportSimplePDF(){
+    const summary = buildExecutiveSummary();
+
+    // Senin index.html’de zaten window.ZeroPDF.exportSimpleReport kullanımı var.
+    // Yoksa fallback: print dialog.
+    if (window.ZeroPDF && typeof window.ZeroPDF.exportSimpleReport === "function"){
+      window.ZeroPDF.exportSimpleReport("Zero@Production Report", [
+        { h: "Executive Snapshot", p: summary }
+      ]);
+      return;
+    }
+    // fallback
+    alert("PDF export engine not found. Fallback: Print dialog will open.");
+    window.print();
+  }
+
+  async function onCopySummary(e){
+    e && e.preventDefault();
+    const txt = buildExecutiveSummary();
+    const ok = await copyToClipboard(txt);
+    if (!ok) alert("Copy failed. (Browser denied clipboard)");
+  }
+
+  function bind(){
+    const b1 = $("btnExportPDF");
+    const b2 = $("btnCopySummary");
+    const b3 = $("btnEmailSnapshot");
+
+    if (b1) b1.addEventListener("click", function(e){ e.preventDefault(); exportSimplePDF(); });
+    if (b2) b2.addEventListener("click", onCopySummary);
+    if (b3) b3.addEventListener("click", function(e){ e.preventDefault(); mailtoSnapshot(); });
+  }
+
+  // bind after DOM ready
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+
+  // expose tiny api if needed later
+  window.ZeroProductionActions = { buildExecutiveSummary, exportSimplePDF, mailtoSnapshot };
+
+
+/* WW_MODAL_BIND_V2_START — minimal, deterministic */
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  function openWW(e){
+    if (e) e.preventDefault();
+    const m = $("wwModal");
+    if (!m) return;
+    m.style.display = "flex";
+
+    const d = $("ww_date");
+    if (d && !d.value){
+      d.value = new Date().toISOString().slice(0,10);
+    }
+    const st = $("wwStatus");
+    if (st) st.textContent = "";
+  }
+
+  function closeWW(e){
+    if (e) e.preventDefault();
+    const m = $("wwModal");
+    if (!m) return;
+    m.style.display = "none";
+  }
+
+  function bind(){
+    const m = $("wwModal");
+    const openBtn = $("btnOpenWWModal");
+    const cancelBtn = $("btnWWCancel");
+    const closeBtn = $("btnWWClose");
+
+    // if missing, do nothing (page may not have WW modal)
+    if (!m || !openBtn) return;
+
+    // idempotent: mark once
+    if (openBtn.dataset.wwBound === "1") return;
+    openBtn.dataset.wwBound = "1";
+
+    openBtn.addEventListener("click", openWW);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeWW);
+    if (closeBtn) closeBtn.addEventListener("click", closeWW);
+
+    // click outside closes
+    m.addEventListener("click", function(ev){
+      if (ev && ev.target === m) closeWW(ev);
+    });
+
+    console.log("[WW] bind ok (#btnOpenWWModal -> #wwModal)");
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+})();
+/* WW_MODAL_BIND_V2_END */
+
+
+})();
+
+
+/* ============================
+   Manual Entry (DEMO WRITE)
+   Table: public.production_manual_entries
+   ============================ */
+
+function _zapNum(v){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function _zapTrim(v){ return (v ?? "").toString().trim(); }
+
+function _zapSet(el, txt){
+  const x = document.getElementById(el);
+  if (x) x.textContent = txt ?? "";
+}
+
+async function insertManualEntry(payload){
+  if (!window.supabaseClient) throw new Error("supabaseClient missing");
+  const { data, error } = await window.supabaseClient
+    .from("production_manual_entries")
+    .insert([payload])
+    .select("id, created_at")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+function wireManualModal(){
+  const modal = document.getElementById("manualModal");
+  if (!modal) return; // legacy modal removed
+  const openBtn = document.getElementById("btnOpenManualModal");
+  const closeBtn = document.getElementById("btnCloseManualModal");
+  const cancelBtn = document.getElementById("btnManualCancel");
+  const submitBtn = document.getElementById("btnManualSubmit");
+
+  function open(){
+    if (!modal) return;
+
+    _zapSet("manualStatus", "");
+    modal.style.display = "flex";
+  }
+  function close(){
+    if (!modal) return;
+    modal.style.display = "none";
+  }
+
+  function validPeriod(x){
+    return /^\d{4}-\d{2}$/.test(_zapTrim(x));
+  }
+
+  async function submit(ev){
+    ev && ev.preventDefault && ev.preventDefault();
+    try{
+      _zapSet("manualStatus", "Saving…");
+      const sample_date = _zapTrim(document.getElementById("mSampleDate")?.value);
+      const fac = _zapTrim(document.getElementById("mFacility")?.value);
+      const parameter_code = _zapTrim(document.getElementById("mParamCode")?.value);
+      const value = _zapTrim(document.getElementById("mValue")?.value);
+      const unit = _zapTrim(document.getElementById("mUnit")?.value);
+      const notes = _zapTrim(document.getElementById("mNotes")?.value);
+
+      if (!sample_date) throw new Error("sample_date is required");
+      if (!parameter_code) throw new Error("parameter_code is required");
+      if (!value) throw new Error("value is required");
+
+      const client_id = (window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()));
+      const row = {
+          sample_date,
+          facility: fac || "Ekoten",
+          sampling_point: "MAIN_OUTLET",
+          discharge_route: "SEWER",
+          parameter_code,
+          parameter_tr: parameter_code,
+          value,
+          unit,
+          measured_flag: "MANUAL",
+          notes
+        };
+
+      const res = await insertManualEntry(row);
+      _zapSet("manualStatus", "Saved ✓");
+
+      // refresh live read automatically
+      const mainFac = document.getElementById("inpFacility");
+      if (mainFac && fac) mainFac.value = fac;
+
+      // small delay so user sees success
+      setTimeout(() => {
+        close();
+        const load = document.getElementById("btnLoadLive");
+        if (load) load.click();
+      }, 350);
+
+    }catch(err){
+      _zapSet("manualStatus", `Error: ${err?.message || err}`);
+    }
+  }
+
+  // bind
+  openBtn && openBtn.addEventListener("click", (e)=>{ e.preventDefault(); open(); });
+  closeBtn && closeBtn.addEventListener("click", (e)=>{ e.preventDefault(); close(); });
+  cancelBtn && cancelBtn.addEventListener("click", (e)=>{ e.preventDefault(); close(); });
+  submitBtn && submitBtn.addEventListener("click", submit);
+
+  // click outside closes
+  modal && modal.addEventListener("click", (e)=>{
+    if (e.target === modal) close();
+  });
+
+  // escape closes
+  document.addEventListener("keydown", (e)=>{
+    if (e.key === "Escape" && modal && modal.style.display === "flex") close();
+  });
+}
+
+// auto-wire when DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+  try{ wireManualModal(); }catch(e){ /* no-op */ }
+});
+
+/* === A3 HEALTH ADAPTER (v_wastewater_health_v3_api) — demo-safe === */
+(function(){
+  function zpPickFacility(){
+    var el = document.querySelector('input[placeholder*="Facility"], #facility, #facilityInput, #facility-name');
+    var v = (el && el.value) ? String(el.value).trim() : "";
+    return v || "Ekoten";
+  }
+
+  function zpSupabaseHeaders(){
+    var key = window.SUPABASE_ANON_KEY || window.supabaseAnonKey || "";
+    return {
+      "apikey": key,
+      "Authorization": "Bearer " + key,
+      "Content-Type": "application/json"
+    };
+  }
+
+  async function zpFetchHealth(){
+    var base = (window.SUPABASE_URL || "").replace(/\/+$/,"");
+    if(!base) return null;
+
+    var facility = zpPickFacility();
+    var url = base + "/rest/v1/v_wastewater_health_v3_api"
+      + "?facility=eq." + encodeURIComponent(facility)
+      + "&select=facility,health,exceed_count,unknown_count,last_sample_date,severity_score"
+      + "&limit=1";
+
+    try{
+      var r = await fetch(url, { headers: zpSupabaseHeaders() });
+      if(!r.ok) return null;
+      var rows = await r.json();
+      return (rows && rows[0]) ? rows[0] : null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  // TODO: burada DOM update yapacağız — index.html snippet’ten sonra ID ile bağlayacağız.
+  window.__ZP_A3_HEALTH__ = { fetch: zpFetchHealth };
+})();
+
+/* === A3 HEALTH UI BINDER — updates #ctoHealth + #ctoSub === */
+(function(){
+  function setBadge(level){
+    var el = document.getElementById("ctoHealth");
+    if(!el) return;
+
+    // reset
+    el.style.fontWeight = "800";
+    el.style.letterSpacing = ".2px";
+    el.style.padding = "2px 10px";
+    el.style.borderRadius = "999px";
+    el.style.display = "inline-block";
+
+    // demo-safe colors (no CSS dependency)
+    if(level === "CRITICAL"){ el.style.background = "#D51635"; el.style.color = "#fff"; }
+    else if(level === "ALERT"){ el.style.background = "#f9ba00"; el.style.color = "#02154e"; }
+    else if(level === "MONITOR"){ el.style.background = "#02154e"; el.style.color = "#fff"; }
+    else { el.style.background = "#e9eef6"; el.style.color = "#02154e"; }
+  }
+
+  async function refresh(){
+    var sub = document.getElementById("ctoSub");
+    var el  = document.getElementById("ctoHealth");
+    if(!el) return;
+
+    if(!window.__ZP_A3_HEALTH__ || typeof window.__ZP_A3_HEALTH__.fetch !== "function"){
+      // fallback: keep existing
+      return;
+    }
+
+    // optimistic UI
+    if(sub) sub.textContent = "Loading live health…";
+
+    var row = await window.__ZP_A3_HEALTH__.fetch();
+    if(!row){
+      el.textContent = "OFFLINE";
+      setBadge("OFFLINE");
+      if(sub) sub.textContent = "Offline mode — last known state";
+      return;
+    }
+
+    var lvl = (row.health || "UNKNOWN").toUpperCase();
+    el.textContent = lvl;
+    setBadge(lvl);
+
+    var meta = [];
+    if(typeof row.exceed_count !== "undefined") meta.push("exceed=" + row.exceed_count);
+    if(typeof row.unknown_count !== "undefined") meta.push("unknown=" + row.unknown_count);
+    if(row.last_sample_date) meta.push("last=" + row.last_sample_date);
+    if(typeof row.severity_score !== "undefined") meta.push("sev=" + row.severity_score);
+
+    if(sub) sub.textContent = meta.join(" • ") || "Live";
+  }
+
+  function bind(){
+    var btn = document.getElementById("btnLoadLive");
+    if(btn){
+      btn.addEventListener("click", function(e){
+        try{ e.preventDefault(); }catch(_){}
+        refresh();
+      });
+    }
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", function(){ bind(); });
+  } else {
+    bind();
+  }
+
+  // expose for manual testing
+  window.__ZP_A3_HEALTH_REFRESH__ = refresh;
+})();

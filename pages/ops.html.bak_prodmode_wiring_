@@ -1,0 +1,1282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Zero@SaaS  Ops</title>
+
+  <style>
+    
+.zp-execpdf{
+  background: var(--orange) !important;
+  color:#061021 !important;
+  border-color: rgba(0,0,0,.25) !important;
+  box-shadow: 0 0 0 3px rgba(249,186,0,.18) !important;
+}
+
+/* === OPS_THEME_REF_V1 (navy + green, reference-like) === */
+:root{
+  --navy:#02154e;
+  --bg:#050915;
+  --panel:#0b1224;
+  --panel2:#0f1a33;
+  --card:#121c2f;
+  --card2:#16223a;
+  --stroke:rgba(255,255,255,.08);
+  --stroke2:rgba(255,255,255,.12);
+  --text:#e9f1ff;
+  --muted:rgba(159,176,208,1);
+
+  \1#48c05a\3     /* reference green */
+  \1#2f6bff\3      /* reference blue */
+  \1#66d1ff\3      /* light cyan line */
+  --amber:#f5b400;
+  --red:#d51635;
+}
+
+/* page bg */
+body{
+  background:
+    radial-gradient(1200px 500px at 40% -10%, rgba(47,107,255,.22), transparent 60%),
+    radial-gradient(900px 520px at 92% 10%, rgba(72,192,90,.08), transparent 55%),
+    linear-gradient(180deg, var(--bg) 0%, #030610 100%);
+  color: var(--text);
+}
+
+/* top nav stays navy */
+.topbar{
+  background: linear-gradient(90deg, var(--navy) 0%, #031a60 40%, var(--navy) 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+/* main shell */
+.shell, .panel, .wrap, .ops-wrap{
+  background: rgba(11,18,36,.55);
+}
+
+/* cards */
+.card, .kpi, .kpi-card, .panel-card{
+  background: linear-gradient(180deg, rgba(18,28,47,.92), rgba(15,26,51,.88));
+  border: 1px solid var(--stroke);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+/* inner panels */
+.box, .tile, .trend, .gauge, .section{
+  background: rgba(18,28,47,.72);
+  border: 1px solid rgba(255,255,255,.05);
+}
+
+/* inputs */
+select, input, .btn{
+  border: 1px solid rgba(255,255,255,.10) !important;
+}
+
+/* primary button: green like reference */
+.btn.primary{
+  background: #0f1f3d !important;
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,.14) !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 0 3px rgba(47,107,255,.16);
+}
+
+/* pills/badges */
+.badge.ok, .pill.ok{
+  color:#caffe0;
+  border-color: rgba(72,192,90,.35);
+  background: rgba(72,192,90,.14);
+}
+.badge.mon, .pill.mon{
+  color:#ffe7a6;
+  border-color: rgba(245,180,0,.45);
+  background: rgba(245,180,0,.14);
+}
+.badge.crit, .pill.crit{
+  color:#ffb7c3;
+  border-color: rgba(213,22,53,.45);
+  background: rgba(213,22,53,.14);
+}
+
+/* chart canvas containers */
+canvas{
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,.25));
+}
+
+html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 35% 15%, rgba(249,186,0,.18), transparent 55%),
+        radial-gradient(900px 500px at 70% 35%, rgba(0,193,122,.10), transparent 55%),
+        radial-gradient(900px 500px at 30% 70%, rgba(213,22,53,.10), transparent 55%),
+        linear-gradient(180deg, #050915 0%, #030610 100%);
+    }
+
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      background: linear-gradient(90deg, var(--navy) 0%, #031a60 40%, var(--navy) 100%);
+      border-bottom:1px solid rgba(255,255,255,.05);
+      padding: 14px 18px;
+    }
+    .topbar-inner{
+      max-width: 1100px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:18px;
+      min-width: 260px;
+    }
+    .logo{
+      width:34px; height:34px;
+      border-radius:10px;
+      background: rgba(255,255,255,.10);
+      display:flex; align-items:center; justify-content:center;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .brand h1{
+      font-size:14px; margin:0; line-height:1.1;
+      letter-spacing:.2px;
+    }
+    .brand .sub{
+      font-size:12px; color:rgba(230,238,252,.75);
+      margin-top:2px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      color: rgba(230,238,252,.9);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .pill .dot{
+      width:8px;height:8px;border-radius:99px;background:var(--green);
+      box-shadow:0 0 0 3px rgba(72,192,90,.08);
+    }
+    .actions{display:flex; gap:10px; align-items:center;}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:8px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      text-decoration:none;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .btn:hover{filter:brightness(1.08);}
+    .btn.primary{
+  background: #0f1f3d !important;
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,.14) !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 0 3px rgba(47,107,255,.16);
+}
+
+    .wrap{max-width:1100px; margin: 28px auto 60px; padding: 0 16px;}
+    .panel{
+      background: linear-gradient(180deg, rgba(0,193,122,.10), rgba(255,255,255,.02));
+      border: 1px solid rgba(0,193,122,.18);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel-header{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:18px;
+      margin-bottom: 14px;
+    }
+    .panel-title{ font-size:16px; margin:0; }
+    .panel-desc{
+      margin:4px 0 0;
+      color: rgba(230,238,252,.70);
+      font-size:12px;
+    }
+
+    .kpi-row{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 14px 0 16px;
+    }
+    .kpi{
+      background: rgba(11,26,22,.62);
+      border:1px solid rgba(0,193,122,.18);
+      border-radius: 14px;
+      padding: 12px 12px;
+      display:flex; flex-direction:column; gap:6px;
+      min-height: 64px;
+    }
+    .kpi .val{
+      font-size:18px; font-weight: 300;
+      letter-spacing:.2px;
+    }
+    .kpi .lbl{
+      font-size:12px;
+      color: rgba(230,238,252,.70);
+    }
+    .badge{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:11px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      width:fit-content;
+    }
+    .badge.ok{ color:#caffe0; border-color: rgba(72,192,90,.35); background: rgba(72,192,90,.14); }
+    .badge.mon{ color:#ffe7a6; border-color: rgba(245,180,0,.45); background: rgba(245,180,0,.14); }
+    .badge.crit{ color:#ffb7c3; border-color: rgba(213,22,53,.45); background: rgba(213,22,53,.14); }
+
+    .mid{
+      display:grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .card{
+      background: rgba(11,26,22,.55);
+      border:1px solid rgba(0,193,122,.18);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .card h3{
+      margin:0 0 8px;
+      font-size:13px;
+      color: rgba(230,238,252,.92);
+    }
+    .card .hint{
+      color: rgba(230,238,252,.60);
+      font-size:11px;
+      margin: 0 0 10px;
+    }
+    .card-top{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:8px;
+    }
+    .chip{
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(0,193,122,.06);
+      border: 1px solid rgba(0,193,122,.18);
+      font-size: 11px;
+      color: rgba(230,238,252,.75);
+      white-space:nowrap;
+    }
+    .canvas-wrap{ height: 240px; position: relative; }
+    canvas{max-width:100% !important; max-height:100% !important;}
+
+    .gauge{ display:flex; flex-direction:column; gap:10px; }
+    .gauge-box{
+      background: rgba(255,255,255,.03);
+      border:1px dashed rgba(0,193,122,.25);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .gauge-metrics{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .mini{
+      background: rgba(0,193,122,.06);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .mini .big{ font-size:16px; font-weight: 300; }
+    .mini .small{ font-size:11px; color: rgba(230,238,252,.65); margin-top:3px; }
+
+    .bridge{
+      margin-top: 12px;
+      background: rgba(11,26,22,.55);
+      border:1px solid rgba(0,193,122,.18);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+    }
+    .bridge p{
+      margin:0;
+      font-size:12px;
+      color: rgba(230,238,252,.70);
+    }
+
+    @media (max-width: 980px){
+      .kpi-row{grid-template-columns: repeat(2, 1fr);}
+      .mid{grid-template-columns: 1fr;}
+    }
+  </style>
+
+<!-- OPS_REF_SKIN_V1 -->
+<style>
+:root{
+  --bg0:#070b12;
+  --bg1:#0a0f19;
+  --panel:#121a27;
+  --panel2:#0f1722;
+  --panel3:#0c1320;
+  --line:rgba(255,255,255,.08);
+  --line2:rgba(255,255,255,.05);
+  --text:#eaf1ff;
+  --muted:rgba(159,176,208,1);
+
+  --green:#48c05a;   /* ref green */
+  --blue:#2f6bff;    /* ref blue */
+  --amber:#f5b400;   /* ref yellow */
+}
+
+html,body{background:radial-gradient(1200px 700px at 20% 15%, rgba(90,120,255,.12), transparent 55%),
+          radial-gradient(900px 600px at 80% 10%, rgba(72,192,90,.10), transparent 60%),
+          linear-gradient(180deg,var(--bg0),var(--bg1)) !important;
+  color:var(--text) !important;
+}
+
+body{letter-spacing:.15px}
+
+/* Top bar: keep it sleek */
+.topbar, header, .header{
+  background: linear-gradient(180deg, rgba(18,26,39,.92), rgba(10,15,25,.75)) !important;
+  border-bottom:1px solid var(--line2) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Main panel wrapper (the big rounded container) */
+.panel, .wrap, .container, .ops-wrap, .cardwrap, .main{
+  background: rgba(18,26,39,.55) !important;
+}
+
+/* Card look = ref panels */
+.card, .kpi, .tile, .box, .panel-card, .section{
+  background: linear-gradient(180deg, rgba(18,26,39,.92), rgba(15,23,34,.86)) !important;
+  border:1px solid var(--line2) !important;
+  box-shadow:
+    0 20px 70px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.04) !important;
+  border-radius: 14px !important;
+}
+
+/* KPI tiles slightly tighter */
+.kpi, .kpi-card{
+  border-radius: 12px !important;
+}
+
+/* Section headings */
+h1,h2,h3,.title{
+  color:var(--text) !important;
+}
+.small, .muted, .sub, .desc{
+  color:var(--muted) !important;
+}
+
+/* Buttons: primary = dark slate (ref), Exec PDF = amber */
+.btn{
+  border-radius: 10px !important;
+  border:1px solid var(--line2) !important;
+  background: rgba(10,15,25,.45) !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.btn:hover{transform: translateY(-1px);}
+
+.btn.primary{
+  background: rgba(18,26,39,.92) !important;
+  border-color: rgba(255,255,255,.10) !important;
+  box-shadow: 0 0 0 3px rgba(47,107,255,.12), inset 0 1px 0 rgba(255,255,255,.04) !important;
+  font-weight:900 !important;
+}
+
+/* Executive PDF button: amber pop */
+#btnExecPdf, .zp-execpdf{
+  background: var(--amber) !important;
+  color: #08111f !important;
+  border-color: rgba(0,0,0,.25) !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 0 3px rgba(245,180,0,.18) !important;
+}
+
+/* Badges */
+.badge, .pill{
+  border-radius: 999px !important;
+  border:1px solid var(--line2) !important;
+  background: rgba(10,15,25,.35) !important;
+}
+.badge.ok, .pill.ok{ color:#caffe0 !important; border-color: rgba(72,192,90,.35) !important; background: rgba(72,192,90,.12) !important; }
+.badge.mon, .pill.mon{ color:#ffe7a6 !important; border-color: rgba(245,180,0,.45) !important; background: rgba(245,180,0,.12) !important; }
+.badge.crit, .pill.crit{ color:#ffb7c3 !important; border-color: rgba(213,22,53,.45) !important; background: rgba(213,22,53,.12) !important; }
+
+/* Chart containers = deep panel */
+canvas{filter: drop-shadow(0 18px 30px rgba(0,0,0,.35));}
+
+/* Gauge panel: subtle inner frame */
+.gauge, .gauge-wrap, .right{
+  background: linear-gradient(180deg, rgba(18,26,39,.90), rgba(12,19,32,.88)) !important;
+  border:1px dashed rgba(255,255,255,.10) !important;
+  border-radius: 14px !important;
+}
+
+/* If there is a left sidebar: paint it green like the ref */
+.sidebar, .side, nav.side, .leftbar{
+  background: linear-gradient(180deg, rgba(72,192,90,.95), rgba(52,170,76,.92)) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.40);
+}
+.sidebar a, .side a, nav.side a{color:#061021 !important}
+
+/* Reduce any accidental green wash on big panels */
+*[style*="rgba(72,192,90"]{ }
+</style>
+
+
+<!-- OPS_REF_TUNE_V2 -->
+<style>
+/* Make ALL greys → blue-slate like the reference */
+:root{
+  --ref-slate-0:#0b1220;
+  --ref-slate-1:#0f1726;
+  --ref-slate-2:#121c2e;
+  --ref-slate-3:#0e1624;
+
+  --ref-line: rgba(255,255,255,.07);
+  --ref-line2: rgba(255,255,255,.045);
+
+  --ref-text:#eaf1ff;
+  --ref-muted:#9fb0d0;
+
+  --ref-green:#48c05a;
+  --ref-blue:#2f6bff;
+  --ref-cyan:#66d1ff;
+  --ref-amber:#f5b400;
+}
+
+/* Big content “grey sheet” → deep blue slate */
+.ops-panel, .panel, .wrap, .container, .main, .content, .ops-wrap{
+  background: linear-gradient(180deg, rgba(15,23,38,.78), rgba(11,18,32,.72)) !important;
+  border: 1px solid var(--ref-line2) !important;
+  box-shadow: 0 26px 70px rgba(0,0,0,.55) !important;
+  color: var(--ref-text) !important;
+}
+
+/* Cards & sections */
+.card, .kpi, .tile, .box, .section, .panel-card{
+  background: linear-gradient(180deg, rgba(18,28,46,.92), rgba(14,22,36,.88)) !important;
+  border: 1px solid var(--ref-line2) !important;
+  color: var(--ref-text) !important;
+}
+
+/* Chart container / gauge backplates */
+.chart, .chart-wrap, .chartbox, .gauge, .gauge-wrap, .right{
+  background: linear-gradient(180deg, rgba(18,28,46,.86), rgba(12,19,32,.86)) !important;
+  border: 1px solid var(--ref-line2) !important;
+}
+
+/* Text */
+.small, .muted, .sub, .desc, .hint{ color: var(--ref-muted) !important; }
+
+/* Exec PDF stays orange/amber */
+#btnExecPdf, .zp-execpdf{
+  background: var(--ref-amber) !important;
+  color: #08111f !important;
+  border-color: rgba(0,0,0,.25) !important;
+  font-weight: 900 !important;
+}
+
+/* Topbar stays navy-ish */
+.topbar, header, .header{
+  background: linear-gradient(180deg, rgba(8,14,26,.92), rgba(5,10,20,.70)) !important;
+  border-bottom:1px solid var(--ref-line2) !important;
+}
+
+/* If any green wash exists, kill it */
+*[style*="rgba(72,192,90"], *[style*="rgb(72,192,90"]{
+  background: unset !important;
+}
+
+/* Subtle glow like reference */
+.card, .kpi, .tile, .box{
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+</style>
+
+
+<!-- OPS_LOGO_TUNE_V1 -->
+<style>
+.header-logo img,
+.logo img {
+  height: 34px;
+  width: auto;
+  filter: drop-shadow(0 0 8px rgba(255,196,25,.35));
+  transition: all .25s ease;
+}
+
+.header-logo img:hover,
+.logo img:hover {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 12px rgba(255,196,25,.55));
+}
+
+.header-title {
+  font-weight: 300;
+  letter-spacing: .4px;
+}
+
+.header {
+  padding: 10px 24px;
+}
+</style>
+
+
+<style>
+/* OPS_LOGO_LAYOUT_V1 */
+.brand {
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.brand .logo {
+  display:flex;
+  align-items:center;
+}
+.brand .logo img {
+  height:34px;
+  width:auto;
+  display:block;
+  filter: drop-shadow(0 0 10px rgba(245,180,0,.28));
+}
+</style>
+
+
+<style>
+/* OPS_BRAND_GREEN_V3 */
+/* Brand green */
+:root {
+  --brand-green: #005530;
+  --brand-green-2: rgba(0,85,48,.92);
+  --brand-green-soft: rgba(0,85,48,.22);
+  --brand-green-border: rgba(72,192,90,.35);
+}
+
+/* 1) Logo 2x (height + padding) */
+.topbar .brand .header-logo {
+  background: var(--brand-green-2) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+.topbar .brand .header-logo img {
+  height: 76px !important;   /* was ~38px */
+  width: auto !important;
+  display: block !important;
+}
+
+/* 2) “same colored grounds” -> green chips/pills */
+.pill,
+.badge,
+.topbar .actions .btn,
+.topbar .actions select.btn {
+  background: var(--brand-green-soft) !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+
+/* Keep text readable */
+.pill, .badge, .topbar .actions .btn, .topbar .actions select.btn {
+  color: #eaf6ff !important;
+}
+
+/* Optional: hover feels nicer */
+.topbar .actions .btn:hover,
+.topbar .actions select.btn:hover {
+  box-shadow: 0 0 0 3px rgba(0,85,48,.25) !important;
+}
+</style>
+
+
+<style>
+/* OPS_HEADER_GREEN_V4 */
+:root {
+  --brand-green: #005530;
+}
+
+/* Header / Topbar background */
+.topbar {
+  background: linear-gradient(90deg, var(--brand-green) 0%, #043b24 45%, var(--brand-green) 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+.topbar .topbar-inner {
+  background: transparent !important;
+}
+</style>
+
+
+<style>
+/* OPS_PANEL_GREEN_V5 */
+/* Operations Dashboard container (the main card/panel) */
+.wrap {
+  background: transparent !important;
+}
+
+.panel {
+  background: linear-gradient(180deg,
+    rgba(0,85,48,.42) 0%,
+    rgba(2,24,18,.78) 45%,
+    rgba(0,12,10,.88) 100%) !important;
+  border: 1px solid rgba(72,192,90,.14) !important;
+  box-shadow:
+    0 26px 70px rgba(0,0,0,.55),
+    0 0 0 1px rgba(0,85,48,.18) inset !important;
+}
+
+.panel-header {
+  border-bottom: 1px solid rgba(72,192,90,.10) !important;
+}
+
+/* Keep inner cards readable (still “dark glass”) */
+.kpi, .card, .box, .mini {
+  background: linear-gradient(180deg,
+    rgba(10,22,18,.62) 0%,
+    rgba(8,16,14,.78) 100%) !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+}
+</style>
+
+
+<style>
+/* OPS_PANEL_SOLID_GREEN_V6 */
+
+/* MAIN OPERATIONS PANEL — SOLID GREEN */
+.panel {
+  background: #005530 !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 30px 80px rgba(0,0,0,.55) !important;
+}
+
+/* Header separator cleaner */
+.panel-header {
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+
+/* Inner KPI cards slightly darker so text reads */
+.kpi, .card, .box, .mini {
+  background: rgba(0,0,0,.25) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+}
+
+</style>
+
+
+<style>
+/* OPS_BRAND_TITLE_V1 */
+
+.brand-title {
+  font-size: 32px !important;
+  font-weight: 300 !important;   /* thin */
+  letter-spacing: 0.5px;
+  margin: 0;
+  color: #ffffff;
+}
+
+.brand-at {
+  color: #f9ba00;   /* orange */
+  font-weight: 300;
+}
+
+</style>
+
+
+<style>
+/* OPS_LOGO_SIZE_V7 */
+
+/* Brand container spacing */
+.brand {
+  display:flex;
+  align-items:center;
+  gap:28px !important;   /* önce 14'tü */
+}
+
+/* Logo bigger */
+.brand .logo img {
+  height:90px !important;   /* büyüttük */
+  width:auto !important;
+  display:block;
+}
+
+/* Title alignment */
+.brand-title {
+  line-height:1.1;
+}
+
+</style>
+
+
+<style>
+/* OPS_DARK_GREEN_BG_V8 */
+
+/* Entire page dark background */
+body {
+  background: #003b22 !important;
+}
+
+/* Wrap / outer container */
+.wrap {
+  background: #003b22 !important;
+}
+
+/* Remove old navy glow layers if any */
+html {
+  background: #003b22 !important;
+}
+
+</style>
+
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <a class="logo header-logo" href="../index.html" title="Back to Production">
+            <img src="../assets/img/plogo.svg" alt="Zero@Production" />
+          </a>
+        <div>
+          <h1 class="brand-title">
+  Zero<span class="brand-at">@</span>Production Waste Water
+</h1>
+          <div class="sub">Production  Textile  Batch Passport</div>
+        </div>
+        <div class="pill"><span class="dot"></span> ML-Ready</div>
+      </div>
+
+      <div class="actions">
+        <select class="btn" id="facilitySelect" title="Facility">
+          <option value="MERKEZ" selected>MERKEZ</option>
+          <option value="ORGU">ORGU</option>
+        </select>
+        <a class="btn" href="../index.html">Executive</a>
+        <a class="btn" href="./ops.html">Ops</a>
+        <a class="btn" href="./wastewater.html">Wastewater</a>
+        <a class="btn" href="../index.html"> Back</a>
+        <a class="btn primary" href="#" id="btnExecPdf" class="btn primary zp-execpdf">Executive PDF</a>
+        <a class="btn" href="#" id="btnLoadLive">Load Live</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Operations Dashboard</h2>
+          <p class="panel-desc">Dark view  gauges + trends. Executive decision layer stays clean; Ops layer shows control signals.</p>
+        </div>
+        <div class="pill"><span class="dot"></span> live-feel (demo)</div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="val" id="kpiWaterIntensity">--</div>
+          <div class="lbl">water intensity (m³/ton)</div>
+        </div>
+        <div class="kpi">
+          <div class="val" id="kpiYoY">--</div>
+          <div class="lbl">YoY change</div>
+        </div>
+        <div class="kpi">
+          <div class="val"><span class="badge mon" id="kpiIntensityStatus">--</span></div>
+          <div class="lbl">intensity status</div>
+        </div>
+        <div class="kpi">
+          <div class="val"><span class="badge ok" id="kpiAnomalyStatus">--</span></div>
+          <div class="lbl">anomaly status</div>
+        </div>
+      </div>
+
+      <div class="mid">
+        <div class="card">
+          <div class="card-top">
+            <h3>Trends</h3>
+            <div class="chip" id="chipFacility">MERKEZ  20222025</div>
+          </div>
+          <p class="hint">Water intensity + recycle (from Supabase view <b>v_water_intelligence</b>).</p>
+          <div class="canvas-wrap">
+            <canvas id="waterTrendChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card gauge">
+          <div class="card-top">
+            <h3>Gauge</h3>
+            <div class="chip">ops signal</div>
+          </div>
+          <p class="hint">Simple radial gauge based on current intensity.</p>
+
+          <div class="gauge-box">
+            <div class="canvas-wrap" style="height:200px;">
+              <canvas id="waterGauge"></canvas>
+            </div>
+
+            <div class="gauge-metrics">
+              <div class="mini">
+                <div class="big" id="gaugeNow">--</div>
+                <div class="small">current m³/ton</div>
+              </div>
+              <div class="mini">
+                <div class="big" id="gaugeFlag">--</div>
+                <div class="small">exec flag</div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px; font-size:11px; color: rgba(230,238,252,.60);">
+              Executive detail: if this signal persists, expected annual impact can be shown (demo-safe estimate).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bridge">
+<!-- CFO_SHOCK_CARD_V1 -->
+<div style="margin-top:16px; padding:16px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.18); border-radius:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <div>
+      <b>Carbon Shock (CFO)</b>
+    </div>
+    <div class="mono">
+      Batch: <span id="cfoShockBatch">—</span>
+    </div>
+  </div>
+
+  <div id="cfoShockState" class="mono" style="margin-bottom:8px;">
+    Loading…
+  </div>
+
+  <div style="overflow:auto;">
+    <table style="width:100%; font-size:13px;">
+      <thead>
+        <tr>
+          <th>Carbon €/t</th>
+          <th>Margin After €</th>
+          <th>Break-even €/t</th>
+          <th>Shock</th>
+        </tr>
+      </thead>
+      <tbody id="cfoShockRows">
+        <tr><td colspan="4">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+        <p><b>Executive Bridge:</b> Ops signals become CFO language ( / year). Next step: connect to real batch KPIs / Supabase view.</p>
+        <span class="badge" style="background:rgba(255,255,255,.05);">Ops  CFO</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="/assets/libs/chart.umd.min.js"></script>
+
+  <!--  Supabase config + loader (your existing stack) -->
+  <script src="../assets/js/supabase.fabric.config.js"></script>
+
+  <!--  Supabase JS (CDN) + client bootstrap for ops.html -->
+  <script src="/assets/libs/supabase.umd.js"></script>
+  <script>
+  (function(){
+    try{
+      if(window.supabaseClient) return;
+
+      var base = (window.SUPABASE_URL || window.__SUPABASE_URL || window.ZERO_SUPABASE_URL || window.supabaseUrl || "").replace(/\/+$/, "");
+      var anon = window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY || window.ZERO_SUPABASE_ANON_KEY || window.supabaseAnonKey || window.SUPABASE_KEY || "";
+      var schema = window.SUPABASE_SCHEMA || "public";
+
+      if(!base || !anon){ console.warn("[OPS] Supabase config missing"); return; }
+      if(!window.supabase || !window.supabase.createClient){ console.warn("[OPS] supabase-js not loaded"); return; }
+
+      window.supabaseClient = window.supabase.createClient(base, anon, { db: { schema: schema } });
+      console.log("[OPS] supabaseClient ready", base, schema);
+    } catch(e){
+      console.warn("[OPS] supabaseClient bootstrap failed", e);
+    }
+  })();
+  </script>
+
+
+  <script>
+    function $(id){ return document.getElementById(id); }
+
+    function badgeClass(el, kind){
+      if(!el) return;
+      el.classList.remove('ok','mon','crit');
+      if(kind==='OK' || kind==='STABLE') el.classList.add('ok');
+      else if(kind==='MONITOR' || kind==='ANOMALY_UP') el.classList.add('mon');
+      else if(kind==='ALERT' || kind==='CRITICAL') el.classList.add('crit');
+      else el.classList.add('mon');
+    }
+
+    function toNum(x){
+      if(x==null) return null;
+      const n = Number(x);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function fmtPct(x){
+      const n = toNum(x);
+      if(n==null) return '--';
+      return (n>=0?'+':'') + n.toFixed(1) + '%';
+    }
+
+    let waterChart = null;
+    let gaugeChart = null;
+
+    function renderTrend(labels, intensity, recycle){
+      const el = $('waterTrendChart');
+      if(!el || typeof Chart === 'undefined') return;
+
+      if(waterChart) waterChart.destroy();
+
+      
+  
+waterChart = new Chart(el, {
+        
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Water Intensity (m³/ton)', data: intensity, borderColor: 'rgba(245,180,0,1)', tension: 0.35 , borderWidth: 3, pointRadius: 0, pointHoverRadius: 0, fill: false, borderCapStyle: 'round', borderJoinStyle: 'round'},
+            { label: 'Recycle %', data: recycle, borderColor: 'rgba(210,215,225,0.85)', tension: 0.35 , borderWidth: 2, pointRadius: 0, pointHoverRadius: 0, fill: false}
+          ]
+        },
+        options: {
+          maintainAspectRatio:false,
+          plugins: { legend: { labels: { color: 'rgba(234,241,255,1)' } } },
+          scales: {
+            x: { ticks: { color: 'rgba(159,176,208,1)' }, grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { ticks: { color: 'rgba(159,176,208,1)' }, grid: { color: 'rgba(255,255,255,.05)' } }
+          }
+        }
+      });
+    }
+
+    function renderGauge(value){
+      const el = $('waterGauge');
+      if(!el || typeof Chart === 'undefined') return;
+
+      const v = toNum(value);
+      const max = 100;
+      const safe = v==null ? 0 : Math.max(0, Math.min(max, v));
+
+      if(gaugeChart) gaugeChart.destroy();
+
+      gaugeChart = new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ['value','rest'],
+          datasets: [{
+            data: [safe, max-safe],
+            backgroundColor: ['#f9ba00', 'rgba(255,255,255,.08)'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          maintainAspectRatio:false,
+          cutout: '78%',
+          rotation: -90,
+          circumference: 180,
+          plugins: { legend: { display:false }, tooltip: { enabled:false } }
+        }
+      });
+
+      $('gaugeNow').innerText = (v==null ? '--' : v.toFixed(1)) + ' m³/ton';
+    }
+
+    function pickClient(){
+      return window.supabaseClient || window.supabase || window.client || null;
+    }
+
+    function demoFallback(facilityCode){
+      console.warn('[OPS] Demo fallback active.');
+      const demo = {
+        MERKEZ: { years:[2022,2023,2024,2025], m3:[66.4,79.1,86.6,83.0], r:[0.0,5.1,8.7,7.4], yoy:-4.2, ist:'MONITOR', an:'STABLE' },
+      ORGU:   { years:[2022,2023,2024,2025], m3:[2.09,1.95,2.12,2.04], r:[0.0,1.2,1.5,1.4], yoy:-3.8, ist:'OK', an:'STABLE' },
+      };
+      const d = demo[facilityCode] || demo.MERKEZ;
+      const latestM3 = d.m3[d.m3.length-1];
+
+      $('chipFacility').innerText = facilityCode + '  ' + d.years[0] + '' + d.years[d.years.length-1];
+      $('kpiWaterIntensity').innerText = latestM3.toFixed(1) + ' m³/ton';
+      $('kpiYoY').innerText = fmtPct(d.yoy);
+
+      $('kpiIntensityStatus').innerText = d.ist;
+      badgeClass($('kpiIntensityStatus'), d.ist);
+
+      $('kpiAnomalyStatus').innerText = d.an;
+      badgeClass($('kpiAnomalyStatus'), d.an);
+
+      $('gaugeFlag').innerText = d.ist;
+      badgeClass($('gaugeFlag'), d.ist);
+
+      renderTrend(d.years, d.m3, d.r);
+      renderGauge(latestM3);
+    }
+
+    async function loadWater(facilityCode){
+      const client = pickClient();
+      if(!client || !client.from){
+        demoFallback(facilityCode);
+        return;
+      }
+
+      const { data, error } = await client
+        .from('v_water_intelligence')
+        .select('*')
+        .eq('facility_code', facilityCode)
+        .order('year', { ascending: true });
+
+      if(error){
+        console.error('[OPS] Water fetch error:', error);
+        demoFallback(facilityCode);
+        return;
+      }
+
+      if(!data || !data.length){
+        console.warn('[OPS] No rows returned for', facilityCode);
+        demoFallback(facilityCode);
+        return;
+      }
+
+      const labels    = data.map(d => d.year);
+      const intensity = data.map(d => toNum(d.m3_per_ton));
+      const recycle   = data.map(d => toNum(d.recycle_pct));
+      const latest    = data[data.length-1];
+
+      $('chipFacility').innerText = facilityCode + '  ' + labels[0] + '' + labels[labels.length-1];
+      $('kpiWaterIntensity').innerText =
+        (toNum(latest.m3_per_ton)==null ? '--' : toNum(latest.m3_per_ton).toFixed(1)) + ' m³/ton';
+      $('kpiYoY').innerText = fmtPct(latest.yoy_pct_change);
+
+      const ist = latest.intensity_status || '--';
+      const an  = latest.anomaly_status || 'STABLE';
+
+      $('kpiIntensityStatus').innerText = ist;
+      badgeClass($('kpiIntensityStatus'), ist);
+
+      $('kpiAnomalyStatus').innerText = an;
+      badgeClass($('kpiAnomalyStatus'), an);
+
+      $('gaugeFlag').innerText = ist;
+      badgeClass($('gaugeFlag'), ist);
+
+      renderTrend(labels, intensity, recycle);
+      renderGauge(latest.m3_per_ton);
+    }
+
+    function wire(){
+      const sel = $('facilitySelect');
+      if(sel){
+        sel.addEventListener('change', () => loadWater(sel.value));
+      }
+
+      const btn = $('btnExecPdf');
+      if(btn){
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          alert('Executive PDF: wire this to your existing export flow (demo-safe).');
+        });
+      }
+
+      const initial = sel ? sel.value : 'MERKEZ';
+      loadWater(initial);
+    }
+
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', wire);
+    } else {
+      wire();
+    }
+  </script>
+
+<!-- OPS_REF_CHART_TUNE_V2 -->
+<script>
+(function(){
+  function tuneChart(ch){
+    try{
+      if(!ch || !ch.data || !ch.data.datasets) return;
+
+      // Global ref-ish options
+      ch.options = ch.options || {};
+      ch.options.plugins = ch.options.plugins || {};
+      ch.options.plugins.legend = ch.options.plugins.legend || {};
+      ch.options.plugins.legend.labels = ch.options.plugins.legend.labels || {};
+      ch.options.plugins.legend.labels.color = "rgba(234,241,255,1)";
+
+      ch.options.scales = ch.options.scales || {};
+      for(const k of Object.keys(ch.options.scales)){
+        const sc = ch.options.scales[k] || {};
+        sc.ticks = sc.ticks || {};
+        sc.grid  = sc.grid  || {};
+        sc.ticks.color = "rgba(159,176,208,1)";
+        sc.grid.color  = "rgba(255,255,255,.05)";
+        sc.grid.borderDash = [3,6];
+        ch.options.scales[k] = sc;
+      }
+
+      // Dataset styling
+      ch.data.datasets.forEach((ds, i) => {
+        const label = (ds.label || "").toLowerCase();
+
+        // Blue line (like ref)
+        if(i === 0){
+          ds.borderColor = "rgba(245,180,0,1)";
+          ds.borderWidth = 2.6;
+          ds.tension = 0.35;
+          ds.pointRadius = 3.5;
+          ds.pointHoverRadius = 5;
+          ds.pointBackgroundColor = "rgba(245,180,0,1)";
+          ds.pointBorderColor = "rgba(255,255,255,.65)";
+          ds.pointBorderWidth = 1;
+          ds.fill = false;
+        }
+
+        // Secondary cyan (like ref small line)
+        if(i === 1){
+          ds.borderColor = "rgba(102,209,255,1)";
+          ds.borderWidth = 2.0;
+          ds.tension = 0.35;
+          ds.pointRadius = 2.8;
+          ds.pointBackgroundColor = "rgba(102,209,255,1)";
+          ds.pointBorderColor = "rgba(255,255,255,.55)";
+          ds.pointBorderWidth = 1;
+          ds.fill = false;
+        }
+
+        // If there is a third dataset or you want area: force amber area
+        if(i === 2 || label.includes("temperature") || label.includes("history")){
+          ds.borderColor = "rgba(245,180,0,1)";
+          ds.borderWidth = 2.6;
+          ds.tension = 0.35;
+          ds.pointRadius = 4;
+          ds.pointBackgroundColor = "rgba(245,180,0,1)";
+          ds.pointBorderColor = "rgba(255,255,255,.70)";
+          ds.pointBorderWidth = 1;
+
+          // amber area fill
+          ds.fill = true;
+          ds.backgroundColor = function(ctx){
+            const c = ctx.chart;
+            const area = c.chartArea;
+            if(!area) return "rgba(245,180,0,.18)";
+            const g = c.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+            g.addColorStop(0, "rgba(245,180,0,.28)");
+            g.addColorStop(1, "rgba(245,180,0,0)");
+            return g;
+          };
+        }
+      });
+
+      // Turn off harsh tooltips (ref is clean)
+      ch.options.plugins.tooltip = ch.options.plugins.tooltip || {};
+      ch.options.plugins.tooltip.backgroundColor = "rgba(10,15,25,.92)";
+      ch.options.plugins.tooltip.borderColor = "rgba(255,255,255,.10)";
+      ch.options.plugins.tooltip.borderWidth = 1;
+      ch.update();
+    }catch(e){}
+  }
+
+  function run(){
+    const list = (window.Chart && Chart.instances) ? Object.values(Chart.instances) : [];
+    // Chart.js v3+ doesn't expose Chart.instances consistently in all builds.
+    // So also search common globals used by inline scripts:
+    const candidates = [];
+    for(const k in window){
+      if(window[k] && window[k].constructor && window[k].constructor.name === "Chart"){
+        candidates.push(window[k]);
+      }
+    }
+    [...new Set([...list, ...candidates])].forEach(tuneChart);
+  }
+
+  // run after charts created
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", () => setTimeout(run, 60));
+  } else {
+    setTimeout(run, 60);
+  }
+})();
+</script>
+
+
+<script>
+/* OPS_GAUGE_ORANGE_V9 */
+document.addEventListener("DOMContentLoaded", function() {
+  if (typeof gaugeChart !== "undefined" && gaugeChart?.data?.datasets) {
+    gaugeChart.data.datasets.forEach(ds => {
+      ds.backgroundColor = ['#f9ba00', 'rgba(255,255,255,.08)'];
+      ds.borderColor = '#f9ba00';
+    });
+    gaugeChart.update();
+  }
+});
+</script>
+
+
+<script>
+// CFO_SHOCK_LIVEFIX_V1
+async function loadCFOShockV1(){
+  const state = document.getElementById("cfoState");
+  const batch = document.getElementById("cfoBatch");
+  const hint  = document.getElementById("cfoHint");
+
+  // tolerate missing elements without throwing
+  const setText = (el, v) => { if(el) el.textContent = v; };
+
+  try{
+    console.log("[CFO] fetching /cfo_shock/latest");
+    const r = await fetch("/cfo_shock/latest", { cache: "no-store" });
+    console.log("[CFO] status", r.status, "ct", r.headers.get("content-type"));
+
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+
+    if(!data || !Array.isArray(data.rows) || !data.rows.length){
+      throw new Error("No rows");
+    }
+
+    const rowWorst = data.rows[data.rows.length - 1]; // last row is worst-case in your feed
+    setText(batch, data.batch_id || "—");
+
+    const flag = rowWorst.shock_flag || "UNKNOWN";
+    const reason = rowWorst.shock_reason || "";
+    const score = (rowWorst.shock_score ?? "");
+
+    // status line
+    setText(state, flag === "SAFE" ? "LIVE: SAFE" : ("LIVE: " + flag));
+
+    // make “Worst: PRESSURE …” pop
+    if(hint){
+      hint.innerHTML = `<b>Worst:</b> ${flag}${score!==""?` (score ${score})`:``} — ${reason}`;
+    }
+
+  } catch(e){
+    setText(state, "OFFLINE: CFO engine not reachable");
+    if(hint) hint.textContent = "API error (check 127.0.0.1:8099)";
+    // keep console signal for debugging
+    console.warn("CFO shock fetch failed:", e);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadCFOShockV1);
+</script>
+
+  <script src="/assets/libs/supabase-js.umd.min.js"></script>
+  <script src="/assets/js/supabase.fabric.config.js"></script>
+</body>
+</html>

@@ -200,6 +200,26 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
       box-shadow: 0 0 0 3px rgba(0,85,48,.10);
     }
 
+/* === WW HEALTH CARD COLORS (v1) === */
+#wwHealthCard.ww-ok .kpi-value{ color:#0a7a3a; }
+#wwHealthCard.ww-monitor .kpi-value{ color:#b77900; }
+#wwHealthCard.ww-critical .kpi-value{ color:#b00020; }
+#wwHealthCard.ww-ok{ border-left:6px solid #0a7a3a; }
+#wwHealthCard.ww-monitor{ border-left:6px solid #b77900; }
+#wwHealthCard.ww-critical{ border-left:6px solid #b00020; }
+
+/* === WW TIMELINE BUTTON (state glow) === */
+#btnWWTimeline{ background:#005530 !important; color:#fff !important; border:1px solid rgba(0,0,0,.08) !important;  margin-top:10px !important; }
+.role-ceo{ font-size:inherit; font-weight:inherit; margin-top:0; opacity:inherit; letter-spacing:inherit; }
+
+
+
+.role-label{ font-size:13px; font-weight:800; padding:8px 0 10px 10px; margin-bottom:10px; border-bottom:1px solid rgba(0,0,0,.08); border-left:1px solid rgba(2,21,78,.22); display:block; opacity:.95; letter-spacing:.9px; text-transform:uppercase; }
+.role-ceo,.role-cfo,.role-cto{ font-size:inherit; font-weight:inherit; margin-top:0; opacity:inherit; letter-spacing:inherit; }
+/* ROLE_LABEL_LEFT_ACCENT_V1 */
+.role-ceo{ border-left-color: rgba(0,85,48,.55) !important; }
+.role-cfo{ border-left-color: rgba(249,186,0,.70) !important; }
+.role-cto{ border-left-color: rgba(2,21,78,.55) !important; }
 </style>
 <style>
 /* LIVE_BADGE_V1 */
@@ -224,6 +244,36 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
   padding-top:10px !important;
 }
 </style>
+
+<!-- CFO_SHOCK_STYLE_V1 -->
+<style>
+#cfoShockCard { border: 1px solid rgba(249,186,0,.20); }
+#cfoShockCard .kpi-head { margin-bottom: 10px; }
+#cfoShockCard .kpi-title { font-weight: 700; letter-spacing: .2px; }
+#cfoShockCard .kpi-subtitle { opacity: .75; font-size: 12px; margin-top: 2px; }
+
+.cfo-state { font-size: 12px; opacity: .85; margin-bottom: 10px; }
+.cfo-table-wrap { overflow-x: auto; }
+.cfo-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cfo-table th, .cfo-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: left; }
+.cfo-table th { opacity: .8; font-weight: 600; font-size: 12px; }
+
+.badge { display:inline-flex; align-items:center; gap:6px; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .2px; }
+.badge::before { content:""; width:8px; height:8px; border-radius: 50%; display:inline-block; }
+
+.badge.safe { background: rgba(0, 170, 90, .18); color: #9dffcc; border: 1px solid rgba(0, 170, 90, .25); }
+.badge.safe::before { background: #00aa5a; }
+
+.badge.pressure { background: rgba(249, 186, 0, .18); color: #ffe08a; border: 1px solid rgba(249, 186, 0, .28); }
+.badge.pressure::before { background: #f9ba00; }
+
+.badge.collapse { background: rgba(213, 22, 53, .18); color: #ffb3bf; border: 1px solid rgba(213, 22, 53, .28); }
+.badge.collapse::before { background: #D51635; }
+
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; opacity: .75; }
+.cfo-foot { margin-top: 10px; display:flex; justify-content: space-between; align-items:center; }
+</style>
+
 </head>
 
 <body>
@@ -232,7 +282,7 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
 <div id="zae-center">
   <div class="wrap">
     <div class="topbar">
-      <img src="assets/img/logo.png" alt="Zero@Production" />
+      <img id="brandLogo" src="assets/img/plogo.svg" alt="Zero@Production" / onerror="this.onerror=null;this.src='assets/img/logo.png';">
       <div>
         <div style="" id="brandTitle">Zero@Production</div>
         <div class="muted">ML-Ready · Offline-first · iPad-safe</div>
@@ -260,27 +310,30 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
       
       <!-- EXECUTIVE CARDS (injected) -->
 <div class="card span-4" id="slotExecutive1">
-  <div style="font-size:12px;opacity:.6;">CEO</div>
-  <div style="font-size:22px;margin-top:6px;">Overall Score <span id="liveBadge" class="badge badge-live">LIVE</span></div>
-  <div id="ceoScore" style="font-size:36px;margin-top:10px;">75%</div>
-  <div id="ceoSub" class="muted" style="margin-top:6px;">Total CO₂ (batch)</div>
-  <div id="ceoMeta" class="muted" style="margin-top:10px; font-size:12px; line-height:1.35;"></div>
+  <div class="role-label role-ceo">CEO</div>
+<div class="kpi-card" id="wwHealthCard" style="margin-top:10px;">
+    <div class="kpi-title">Wastewater Health</div>
+    <div class="kpi-value" id="wwHealthStatus">--</div>
+    <div class="kpi-sub" id="wwHealthMinutes">-- minutes in state</div>
+    <button id="btnWWTimeline" class="btn" style="margin-top:6px;background:#005530;color:#fff;padding:6px 10px;border-radius:6px;">View Timeline</button>
+  </div>
 
-  <div class="muted">Demo value (static)</div>
+  <div style="font-size:18px;margin-top:10px; display:flex; align-items:center; gap:10px;">Decision Status <span id="ceoDecisionBadge" class="badge badge-live">LIVE</span></div>
+  <div id="ceoDecision">--</div>
+  <div id="ceoDecisionNote" style="margin-top:6px;font-size:12px;opacity:.65;">Based on Wastewater + System Health</div>
+  <div id="ceoMeta" class="muted" style="margin-top:10px; font-size:12px; line-height:1.35;"></div>
 </div>
 
 <div class="card span-4" id="slotExecutive2">
-  <div style="font-size:12px;opacity:.6;">CFO</div>
-  <div style="font-size:22px;margin-top:6px;">Impact / Year</div>
+  <div class="role-label role-cfo">CFO</div>
+<div style="font-size:22px;margin-top:6px;">Impact / Year</div>
   <div id="cfoImpact" style="font-size:28px;margin-top:10px;">&euro; 477,440</div>
   <div class="muted">Estimated financial exposure</div>
 </div>
 
 <div class="card span-4" id="slotExecutive3">
-  <div style="font-size:12px;opacity:.6;">CTO</div>
-
-
-  <div style="font-size:22px;margin-top:14px;">System Health</div>
+  <div class="role-label role-cto">CTO</div>
+<div style="font-size:22px;margin-top:14px;">System Health</div>
   <div id="ctoHealth" style="font-size:28px;margin-top:10px;">OK</div>
   <div id="ctoSub" class="muted" style="font-size:11px;opacity:.55;">Offline mode active</div>
 
@@ -327,7 +380,7 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
 
         <div id="paneManual" style="margin-top:12px;display:none;">
   <div class="muted" style="margin-bottom:8px;">Manual input opens as a popup. Evidence flow comes next.</div>
-  <a href="#" class="btn" id="btnOpenManualModal">Open Manual Entry Form</a>
+  <a href="#" class="btn" id="btnOpenWWModal">Open Manual Entry Form</a>
 
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
     <input class="inp" id="inpPeriod" type="text" placeholder="Period (YYYY-MM)" />
@@ -393,19 +446,58 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
 
 
 <script src="assets/js/production-data.js?v=1771434637"></script>
-  <script src="assets/js/manual-entry-wastewater.js?v=WW1"></script>
-<script>window.ZeroProductionV1 && window.ZeroProductionV1.boot();</script>
+  <script src="assets/js/risk-core.js"></script>
+  
+<!-- ZP_CLEAR_RISK_V1 -->
+<script>
+(function(){
+  try{
+    var qs = new URLSearchParams(location.search);
+    if(qs.has("clearRisk")){
+      localStorage.removeItem("ZERO_RISK_V1");
+      localStorage.removeItem("ZERO_RISK"); // legacy (if any)
+      sessionStorage.removeItem("ZERO_RISK_V1");
+      console.log("[ZP] clearRisk=1 applied");
+    }
+  }catch(e){}
+})();
+</script>
+<script src="assets/js/exec-bridge.js?v=1772085941"></script>
+  <script>
+  (function(){
+    var s=document.createElement("script");
+    s.src="assets/js/manual-entry-wastewater.js?v="+Date.now();
+    s.defer=true;
+    document.head.appendChild(s);
+  })();
+  </script>
+<script>
+(function(){
+  function ok(){
+    return !!(window.ZeroProductionV1 && typeof window.ZeroProductionV1.boot === "function");
+  }
+  function ww(){
+    // manual-entry-wastewater.js genelde global bind fonksiyonu veya init bırakır
+    return !!(window.ManualEntryWastewater || window.manualEntryWastewater || window.ZP_WW || window.ZP_Wastewater);
+  }
+  var tries=0;
+  (function loop(){
+    tries++;
+    // Boot için ZeroProduction yeterli; WW varsa daha iyi.
+    if(ok() && (ww() || tries>50)){
+      try{ window.ZeroProductionV1.boot(); }catch(e){ console.warn("boot failed", e); }
+      return;
+    }
+    if(tries>80){
+      console.warn("boot timeout");
+      return;
+    }
+    setTimeout(loop, 80);
+  })();
+})();
+</script>
 
 </div>
-
-<!-- Manual Entry Modal (DEMO) -->
-<div id="manualModal" class="zae-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;align-items:center;justify-content:center;padding:16px;">
-  <div class="zae-modal__panel" style="max-width:720px;width:100%;overflow:hidden;">
-    <div style="background:#02154e;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:14px;letter-spacing:.2px;">Manual Entry</div>
-      <a href="#" id="btnCloseManualModal" style="color:#f9ba00;text-decoration:none;font-weight:700;">✕</a>
-    </div>
-
     <div style="padding:16px;background:#fff;">
       <div class="muted" style="margin-bottom:10px;">
         Demo write → Supabase table <code>public.production_manual_entries</code>
@@ -438,5 +530,68 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
 </div>
 <!-- /Manual Entry Modal -->
 
+<!-- === WW TIMELINE MODAL (v1) === -->
+<div id="wwTimelineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;align-items:center;justify-content:center;">
+  <div style="background:#fff;max-width:900px;width:92%;max-height:80vh;overflow:auto;border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="font-size:16px;font-weight:600;">Wastewater Timeline</div>
+      <button id="btnWWTimelineClose" class="btn" style="padding:6px 10px;">Close</button>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:#555;" id="wwTimelineMeta">Loading…</div>
+    <div style="margin-top:12px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Started</th>
+            <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">From → To</th>
+            <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Severity</th>
+            <th style="text-align:right;border-bottom:1px solid #eee;padding:8px;">Minutes</th>
+          </tr>
+        </thead>
+        <tbody id="wwTimelineBody">
+          <tr><td colspan="4" style="padding:10px;color:#777;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- CFO_SHOCK_CARD_V1 -->
+<div class="kpi-card" id="cfoShockCard">
+  <div class="kpi-head">
+    <div class="kpi-title">CFO Shock Engine</div>
+    <div class="kpi-subtitle">Carbon price impact on margin (latest batch)</div>
+  </div>
+
+  <div id="cfoShockState" class="cfo-state">Loading…</div>
+
+  <div class="cfo-table-wrap">
+    <table class="cfo-table">
+      <thead>
+        <tr>
+          <th>Price</th>
+          <th>Margin After</th>
+          <th>Break-even</th>
+          <th>Shock</th>
+        </tr>
+      </thead>
+      <tbody id="cfoShockRows"></tbody>
+    </table>
+  </div>
+
+  <div class="cfo-foot">
+    <span class="mono" id="cfoShockBatch">batch: —</span>
+  </div>
+</div>
+
+<div id="execRiskBanner" style="display:none;position:sticky;top:0;z-index:99999;background:#e74c3c;color:#fff;padding:10px 12px;font-weight:700;text-align:center;"></div>
+<div id="execRiskDot" class="risk-dot" style="position:fixed;top:14px;right:14px;width:12px;height:12px;border-radius:50%;z-index:99999;box-shadow:0 0 0 3px rgba(0,0,0,.08);"></div>
+<style>
+  .risk-dot{background:#9CA3AF}
+.risk-dot.ok{background:#2ecc71}
+  .risk-dot.monitor{background:#f1c40f}
+  .risk-dot.action{background:#e74c3c}
+</style>
 </body>
 </html>

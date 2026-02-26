@@ -1,0 +1,14 @@
+/* WW_MODAL_STYLE_FIX_V1 */
+#wwModal {
+  display: none;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,.45) !important;
+  z-index: 100000 !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#wwModal .zae-modal__panel {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}

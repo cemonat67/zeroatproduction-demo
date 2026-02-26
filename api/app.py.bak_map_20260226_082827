@@ -1,0 +1,50 @@
+import os
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+
+app = FastAPI(title="Zero@Production API Shim", version="0.1")
+
+def demo_payload(facility: str):
+    # demo-safe fallback (same shape as your UI expects)
+    return {
+        "facility": facility,
+        "asof": "DEMO",
+        "shock_eur_t": 1.42,
+        "water_m3": 116,
+        "energy_mwh": 7.07,
+        "total_co2_t": 20.58,
+    }
+
+@app.get("/health")
+def health():
+    return {"ok": True, "service": "zp-api-shim", "version": "0.1"}
+
+@app.get("/cfo_shock/latest")
+def cfo_shock_latest(facility: str = "MERKEZ"):
+    url = os.getenv("SUPABASE_URL", "").strip()
+    key = os.getenv("SUPABASE_ANON_KEY", "").strip()
+
+    if not url or not key or "YOUR_" in url or "YOUR_" in key:
+        # no config -> demo
+        return JSONResponse(demo_payload(facility))
+
+    try:
+        from supabase import create_client
+        sb = create_client(url, key)
+
+        # Expecting view public.v_cfo_shock_latest with fields like:
+        # facility, asof, shock_eur_t, ...
+        q = sb.table("v_cfo_shock_latest").select("*").eq("facility_code", facility).limit(1)
+        res = q.execute()
+        data = getattr(res, "data", None) or []
+        if not data:
+            return JSONResponse(demo_payload(facility))
+
+        row = data[0]
+        return JSONResponse(row)
+
+    except Exception:
+        return JSONResponse(demo_payload(facility))
