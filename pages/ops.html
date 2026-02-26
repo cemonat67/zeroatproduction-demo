@@ -962,6 +962,133 @@ waterChart = new Chart(el, {
         }
       });
     }
+      /* OPS_WW_TREND_V1 — overlay wastewater risk on Water Trend chart */
+      function wwScoreFromRow(r){
+        // Prefer numeric severity_score if present
+        var sev = (r && r.severity_score != null) ? Number(r.severity_score) : null;
+        if(Number.isFinite(sev)){
+          // Normalize to 0..100 (if your severity already is 0..100 this is no-op)
+          if(sev < 0) sev = 0;
+          if(sev > 100) sev = 100;
+          return sev;
+        }
+        // Fallback map from health/status strings
+        var h = String((r && (r.health || r.status || r.state || "")) || "").toUpperCase();
+        if(h === "OK" || h === "STABLE") return 20;
+        if(h === "MONITOR" || h === "WARNING") return 50;
+        if(h === "ALERT" ) return 80;
+        if(h === "CRITICAL") return 100;
+        return null;
+      }
+
+      function yearFromDate(x){
+        if(!x) return null;
+        // accepts "YYYY-MM-DD" or timestamp
+        try{
+          var d = new Date(x);
+          var y = d.getUTCFullYear();
+          return Number.isFinite(y) ? y : null;
+        }catch(e){ return null; }
+      }
+
+      function applyWastewaterOverlay(labelsYears, wwByYear){
+        try{
+          if(!waterChart) return;
+          if(!labelsYears || !labelsYears.length) return;
+
+          var dataArr = labelsYears.map(function(y){
+            var v = wwByYear && wwByYear[y];
+            return (v == null ? null : v);
+          });
+
+          var idx = -1;
+          for(var i=0;i<waterChart.data.datasets.length;i++){
+            if(waterChart.data.datasets[i] && waterChart.data.datasets[i].label === "Wastewater Risk (0–100)") { idx = i; break; }
+          }
+
+          var ds = {
+            label: "Wastewater Risk (0–100)",
+            data: dataArr,
+            yAxisID: "y1",
+            tension: 0.35,
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            fill: false,
+            borderDash: [6,6]
+          };
+
+          if(idx === -1) waterChart.data.datasets.push(ds);
+          else waterChart.data.datasets[idx] = ds;
+
+          // ensure y1 scale exists
+          waterChart.options = waterChart.options || {};
+          waterChart.options.scales = waterChart.options.scales || {};
+          waterChart.options.scales.y1 = waterChart.options.scales.y1 || {
+            position: "right",
+            suggestedMin: 0,
+            suggestedMax: 100,
+            grid: { drawOnChartArea: false }
+          };
+
+          waterChart.update();
+        }catch(e){
+          console.warn("[OPS] WW overlay failed", e);
+        }
+      }
+
+      async function loadWastewaterTrend(facilityCode, labelsYears){
+        // Respect same Live Gate behavior as water
+        if(window.PRODUCTION_MODE && !window.__OPS_LIVE_ENABLED){
+          // demo fallback (matches ops look)
+          var demo = {
+            MERKEZ: { 2022:35, 2023:48, 2024:62, 2025:55 },
+            ORGU:   { 2022:12, 2023:18, 2024:22, 2025:20 }
+          };
+          applyWastewaterOverlay(labelsYears, demo[facilityCode] || demo.MERKEZ);
+          return;
+        }
+
+        var client = pickClient();
+        if(!client || !client.from){
+          var demo2 = { MERKEZ:{2022:35,2023:48,2024:62,2025:55} };
+          applyWastewaterOverlay(labelsYears, (demo2[facilityCode] || demo2.MERKEZ));
+          return;
+        }
+
+        // Use timeline view (exists in repo references)
+        var q = client.from("v_wastewater_timeline").select("facility,sample_date,health,status,severity_score").eq("facility", facilityCode);
+
+        var res = await q;
+        if(res && res.error){
+          console.warn("[OPS] WW timeline error", res.error);
+          var demo3 = { MERKEZ:{2022:35,2023:48,2024:62,2025:55} };
+          applyWastewaterOverlay(labelsYears, (demo3[facilityCode] || demo3.MERKEZ));
+          return;
+        }
+
+        var rows = (res && res.data) ? res.data : [];
+        var agg = {};   // year -> {sum,count}
+        rows.forEach(function(r){
+          var y = yearFromDate(r.sample_date);
+          if(!y) return;
+          var sc = wwScoreFromRow(r);
+          if(sc == null) return;
+          if(!agg[y]) agg[y] = {sum:0, count:0};
+          agg[y].sum += sc;
+          agg[y].count += 1;
+        });
+
+        var wwByYear = {};
+        Object.keys(agg).forEach(function(y){
+          var a = agg[y];
+          if(a && a.count) wwByYear[Number(y)] = Math.round((a.sum / a.count) * 10) / 10;
+        });
+
+        applyWastewaterOverlay(labelsYears, wwByYear);
+      }
+      /* /OPS_WW_TREND_V1 */
+
 
     function renderGauge(value){
       const el = $('waterGauge');
@@ -1026,7 +1153,9 @@ console.warn('[OPS] Demo fallback active.');
 
       renderTrend(d.years, d.m3, d.r);
       renderGauge(latestM3);
-    }
+    
+        try{ loadWastewaterTrend(facilityCode, d.years); }catch(_e){}
+}
 
     async function loadWater(facilityCode){
         // OPS_LIVE_GATE_V1
