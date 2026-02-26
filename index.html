@@ -371,13 +371,13 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
       <div class="card span-12" id="slotModules">
         <div style="font-size:12px;opacity:.6;">Modules</div>
         <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:10px;">
-          <a class="pill" href="fibre-real.html">Fibre DPP</a>
-          <a class="pill" href="yarn-real.html">Yarn DPP</a>
-          <a class="pill" href="fabric-real.html">Fabric DPP</a>
-          <a class="pill" href="chemicals-real.html">Chemicals &amp; Dyes</a>
-          <a class="pill" href="finishing-real.html">Finishing</a>
+          <a class="pill" href="fibre-real.html" onclick="event.preventDefault(); location.href='fibre-real.html?bust='+Date.now(); return false;">Fibre DPP</a>
+          <a class="pill" href="yarn-real.html" onclick="event.preventDefault(); location.href='yarn-real.html?bust='+Date.now(); return false;">Yarn DPP</a>
+          <a class="pill" href="fabric-real.html" onclick="event.preventDefault(); location.href='fabric-real.html?bust='+Date.now(); return false;">Fabric DPP</a>
+          <a class="pill" href="chemicals-real.html" onclick="event.preventDefault(); location.href='chemicals-real.html?bust='+Date.now(); return false;">Chemicals &amp; Dyes</a>
+          <a class="pill" href="finishing-real.html" onclick="event.preventDefault(); location.href='finishing-real.html?bust='+Date.now(); return false;">Finishing</a>
           <a class="pill" href="GarmentDPP.html">Garment</a>
-          <a class="pill" href="wastewater-intelligence.html">Wastewater</a>
+          <a class="pill" href="wastewater-intelligence.html" onclick="event.preventDefault(); location.href='wastewater-intelligence.html?bust='+Date.now(); return false;">Wastewater</a>
         </div>
         <div class="muted" style="margin-top:10px;">Open a module • Return back via “← Back”</div>
       </div>
