@@ -1027,19 +1027,7 @@ waterChart = new Chart(el, {
         }catch(e){ return null; }
       }
 
-      function applyWastewaterOverlay(labelsYears, wwByYear){
-        try{
-          if(!waterChart) return;
-          if(!labelsYears || !labelsYears.length) return;
-
-          var dataArr = labelsYears.map(function(y){
-            var v = wwByYear && wwByYear[y];
-            return (v == null ? null : v);
-          });
-
-          var idx = -1;
-          for(var i=0;i<waterChart.data.datasets.length;i++){
-            if(waterChart.data.datasets[i] && waterChart.data.datasets[i].label === "Wastewater Risk (0–100)") { idx = i; break; }
+       function applyWastewaterOverlay(){ console.warn("[OPS][WW] overlay disabled (stable mode)"); }
           }
 
           var ds = {
