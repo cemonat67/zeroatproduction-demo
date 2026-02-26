@@ -1027,7 +1027,60 @@ waterChart = new Chart(el, {
         }catch(e){ return null; }
       }
 
-       function applyWastewaterOverlay(){ console.warn("[OPS][WW] overlay disabled (stable mode)"); }
+       
+      // OPS_WW_OVERLAY_SAFE_V3 — stable overlay (no scriptables, no recursion)
+      function applyWastewaterOverlay(labelsYears, wwByYear){
+        try{
+          var waterChart = window.waterChart;
+          if(!waterChart || !waterChart.data || !waterChart.data.datasets){
+            console.warn("[OPS][WW] no waterChart yet");
+            return;
+          }
+
+          var labels = (labelsYears && labelsYears.length ? labelsYears : (waterChart.data.labels || []));
+          if(!labels || !labels.length){
+            console.warn("[OPS][WW] no labels for overlay");
+            return;
+          }
+
+          // Build year->risk map from rows
+          var m = {};
+          if(Array.isArray(wwByYear)){
+            wwByYear.forEach(function(r){
+              if(!r) return;
+              var y = "";
+              if(r.year != null) y = String(r.year);
+              else if(r.sample_date) y = String(r.sample_date).slice(0,4);
+              else if(r.started_at) y = String(r.started_at).slice(0,4);
+
+              y = (y || "").slice(0,4);
+
+              var v = null;
+              if(r.risk_score != null) v = Number(r.risk_score);
+              else if(r.severity_score != null) v = Number(r.severity_score);
+              else if(r.severity != null) v = Number(r.severity);
+              else if(r.to_severity != null) v = Number(r.to_severity);
+              else if(r.value != null) v = Number(r.value);
+
+              if(y && (v === 0 || (typeof v === "number" && isFinite(v)))){
+                // normalize: if coming as 0-3 severity, scale to 0-100 (optional)
+                if(v <= 3) v = Math.round((v/3)*100);
+                m[y] = v;
+              }
+            });
+          }
+
+          // align overlay points to chart labels (usually years like 2022..2025)
+          var dataArr = labels.map(function(l){
+            var y = String(l).slice(0,4);
+            return (m.hasOwnProperty(y) ? m[y] : null);
+          });
+
+          // find / upsert dataset
+          var idx = -1;
+          for(var k=0; k<waterChart.data.datasets.length; k++){
+            var d = waterChart.data.datasets[k];
+            if(d && d.label === "Wastewater Risk (0–100)"){ idx = k; break; }
           }
 
           var ds = {
@@ -1039,27 +1092,33 @@ waterChart = new Chart(el, {
             pointRadius: 0,
             pointHoverRadius: 0,
             fill: false,
-            borderDash: [6,6]
+            borderDash: [6,6],
+            spanGaps: true
           };
 
           if(idx === -1) waterChart.data.datasets.push(ds);
           else waterChart.data.datasets[idx] = ds;
 
-          // ensure y1 scale exists
+          // ensure y1 exists (pure object; no callbacks)
           waterChart.options = waterChart.options || {};
           waterChart.options.scales = waterChart.options.scales || {};
-          waterChart.options.scales.y1 = waterChart.options.scales.y1 || {
-            position: "right",
-            suggestedMin: 0,
-            suggestedMax: 100,
-            grid: { drawOnChartArea: false }
-          };
+          if(!waterChart.options.scales.y1){
+            waterChart.options.scales.y1 = {
+              type: "linear",
+              position: "right",
+              min: 0,
+              max: 100,
+              grid: { drawOnChartArea: false }
+            };
+          }
 
-          waterChart.update();
+          // update without animation to avoid weird scriptables
+          if(typeof waterChart.update === "function") waterChart.update("none");
         }catch(e){
           console.warn("[OPS] WW overlay failed", e);
         }
       }
+
 
       async function loadWastewaterTrend(facilityCode, labelsYears){
         const wwFacility = mapWastewaterFacility(facilityCode);
