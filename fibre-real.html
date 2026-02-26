@@ -323,10 +323,7 @@
       // If user came from dashboard, go back; else go to dashboard
       try {
         if (history.length > 1) {
-          e.preventDefault();
-          history.back();
-          setTimeout(function(){ location.href = "./index.html#modules"; }, 350);
-        }
+          e.preventDefault(); location.href = "./index.html#modules"; }
       } catch(_e){}
     });
   }
