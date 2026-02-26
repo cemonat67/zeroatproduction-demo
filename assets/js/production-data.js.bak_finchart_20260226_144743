@@ -1,4 +1,3 @@
-console.log("[PD] LOADED production-data.js", new Date().toISOString());
 /* ZP_MODAL_INJECTOR_V1
    - injects assets/css/zp-modal.css and assets/js/zp-modal.js at runtime
    - then binds standardized modal behavior for wwModal only
@@ -184,7 +183,7 @@ console.log("[ZP] boot: supabaseClient=", typeof window.supabaseClient, "supabas
 
     const body = { p_passport_id: passportId };
 
-    const res = await (fetch(url, { method:"POST", headers, body: JSON.stringify(body) }).catch(function(){return fetch(urlFallback, { method:"POST", headers, body: JSON.stringify(body) });}));
+    const res = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
 
 
     if (!res.ok){
@@ -1087,26 +1086,13 @@ async function loadCFOShockV1() {
   const state = document.getElementById("cfoShockState");
   const rowsEl = document.getElementById("cfoShockRows");
   const batchEl = document.getElementById("cfoShockBatch");
-  const __dbg = /[?&]debug=1/.test(location.search);
-  if(__dbg) console.log("[CFO] init", {origin: location.origin, apiBase: (window.ZP_API_BASE||window.API_BASE||"")});
   if(!state || !rowsEl || !batchEl) return;
 
-  const apiBase =
-    (window.ZP_API_BASE || window.API_BASE || "").toString().replace(/\/+$/,"");
-
-  // Prefer: explicit base → same-origin (proxy) → local dev api
-  const url = apiBase
-    ? (apiBase + "/api/cfo_shock/latest")
-    : (location.origin + "/api/cfo_shock/latest");
-
-  // local dev fallback (no proxy case)
-  const urlFallback = "http://127.0.0.1:8099/cfo_shock/latest";
+  const url = "/api/cfo_shock/latest";
 
   try {
     state.textContent = "Loading from CFO engine…";
-    if(__dbg) console.log("[CFO] fetch", url);
     const res = await fetch(url, { cache: "no-store" });
-    if(__dbg) console.log("[CFO] status", res.status);
     if(!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
 
@@ -1138,162 +1124,8 @@ async function loadCFOShockV1() {
     }
   } catch (e) {
     state.textContent = "OFFLINE: CFO engine not reachable";
-    if(__dbg) console.log("[CFO] error", e);
     rowsEl.innerHTML = `<tr><td colspan="4" class="mono">API error (check /api/cfo_shock/latest)</td></tr>`;
   }
 }
 
 document.addEventListener("DOMContentLoaded", loadCFOShockV1);
-
-/* === FINISHING CHART (v_finishing_kpis_daily) — demo-safe === */
-(function(){
-  function zpPickFacility(){
-    var el = document.querySelector('input[placeholder*="Facility"], #facility, #facilityInput, #facility-name');
-    var v = (el && el.value) ? String(el.value).trim() : "";
-    return v || "Ekoten";
-  }
-
-  function zpSupabaseHeaders(){
-    var key = window.SUPABASE_ANON_KEY || window.supabaseAnonKey || "";
-    return {
-      "apikey": key,
-      "Authorization": "Bearer " + key,
-      "Content-Type": "application/json"
-    };
-  }
-
-  async function zpFetchFinishing30d(){
-    var base = (window.SUPABASE_URL || "").replace(/\/+$/,"");
-    if(!base) return [];
-    var facility = zpPickFacility();
-
-    // view: public.v_finishing_kpis_daily (senin seed’lerin buraya geliyor)
-    // seçelim: day, throughput_ton, water_m3, energy_mwh, co2_t
-    var url = base + "/rest/v1/v_finishing_kpis_daily"
-      + "?facility=eq." + encodeURIComponent(facility)
-      + "&select=day,throughput_ton,water_m3,energy_mwh,co2_t"
-      + "&order=day.asc"
-      + "&limit=30";
-
-    try{
-      var r = await fetch(url, { headers: zpSupabaseHeaders() });
-      if(!r.ok) return [];
-      var rows = await r.json();
-      return Array.isArray(rows) ? rows : [];
-    }catch(e){
-      return [];
-    }
-  }
-
-  function fmtDay(s){
-    // yyyy-mm-dd -> mm-dd (demo basit)
-    if(!s) return "";
-    var t = String(s);
-    return t.length >= 10 ? t.slice(5,10) : t;
-  }
-
-  function setText(id, txt){
-    var el = document.getElementById(id);
-    if(el) el.textContent = txt || "";
-  }
-
-  function ensureChartJS(){
-    return (typeof window.Chart !== "undefined");
-  }
-
-  var _finChartInstance = null;
-
-  function renderChart(rows){
-    if(!ensureChartJS()) {
-      setText("finChartNote", "Chart.js missing (chart.umd.min.js)");
-      return;
-    }
-
-    var canvas = document.getElementById("finChart");
-    if(!canvas) return;
-
-    var labels = rows.map(r => fmtDay(r.day));
-    var co2 = rows.map(r => Number(r.co2_t || 0));
-    var water = rows.map(r => Number(r.water_m3 || 0));
-    var energy = rows.map(r => Number(r.energy_mwh || 0));
-
-    // eski chart varsa yok et (Safari memory safe)
-    try { if(_finChartInstance) _finChartInstance.destroy(); } catch(e){}
-    _finChartInstance = null;
-
-    _finChartInstance = new window.Chart(canvas.getContext("2d"), {
-      type: "line",
-      data: {
-        labels: labels,
-        datasets: [
-          { label: "CO2 (t)", data: co2, tension: 0.3, pointRadius: 0, yAxisID: "y" },
-          { label: "Energy (MWh)", data: energy, tension: 0.3, pointRadius: 0, yAxisID: "y" },
-          { label: "Water (m3)", data: water, tension: 0.3, pointRadius: 0, yAxisID: "y1" }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: "index", intersect: false },
-        plugins: { legend: { display: true } },
-        scales: {
-            y: {
-              position: "left",
-              title: { display: true, text: "CO2 / Energy" },
-              ticks: { maxTicksLimit: 6 }
-            },
-            y1: {
-              position: "right",
-              grid: { drawOnChartArea: false },
-              title: { display: true, text: "Water (m3)" },
-              ticks: { maxTicksLimit: 6 }
-            },
-            x: { ticks: { maxTicksLimit: 8 } }
-          }
-      }
-});
-
-    var last = rows[rows.length-1] || null;
-    if(last){
-      setText("finLastSync", "sync: " + (last.day || "—"));
-      setText("finChartNote",
-        "last: throughput=" + (last.throughput_ton ?? "—")
-        + " ton | water=" + (last.water_m3 ?? "—")
-        + " m³ | energy=" + (last.energy_mwh ?? "—")
-        + " MWh | CO₂=" + (last.co2_t ?? "—") + " t"
-      );
-    } else {
-      setText("finLastSync", "sync: —");
-      setText("finChartNote", "No finishing data (demo-safe).");
-    }
-  }
-
-  async function refresh(){
-    var rows = await zpFetchFinishing30d();
-    renderChart(rows);
-  }
-
-  // expose for manual testing
-  window.__ZP_FINISHING__ = { fetch: zpFetchFinishing30d, refresh };
-
-  
-  // auto-refresh on load (demo-safe)
-  if(!window.__ZP_FINISHING__._auto){
-    window.__ZP_FINISHING__._auto = 1;
-    document.addEventListener("DOMContentLoaded", function(){
-      try{ setTimeout(function(){ window.__ZP_FINISHING__.refresh(); }, 120); }catch(e){}
-    });
-  }
-// auto-run after DOM ready
-  function boot(){
-    // yalnızca finChart varsa çalış
-    if(!document.getElementById("finChart")) return;
-    refresh();
-  }
-
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-})();

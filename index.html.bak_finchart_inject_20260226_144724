@@ -293,20 +293,7 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
       <div class="card span-12">
         <div style="display:flex; gap:10px; flex-wrap:wrap">
           <button class="btn" id="btnPdf">Export PDF (simple)</button>
-          
-<!-- FINISHING_CHART_V1 -->
-<div style="margin-top:10px;padding:10px;border:1px solid rgba(2,21,78,.12);border-radius:12px;background:#fff;">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-    <div style="font-weight:800;color:#02154e;">Finishing — Last 30 Days</div>
-    <div id="finLastSync" class="mono" style="font-size:12px;color:#64748b;">sync: —</div>
-  </div>
-  <div style="height:160px;margin-top:8px;">
-    <canvas id="finChart" height="160"></canvas>
-  </div>
-  <div class="mono" id="finChartNote" style="margin-top:6px;font-size:12px;color:#64748b;"></div>
-</div>
-
-<a class="btn" href="index.html">Refresh</a>
+          <a class="btn" href="index.html">Refresh</a>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center">
           <input id="inpPassportId" class="inp" type="text" placeholder="Passport ID (e.g., EKOTEN-2401-B01)" />
@@ -440,7 +427,6 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
       }
     })();
   </script>
-<script src="assets/js/config.local.js"></script>
 <script src="assets/libs/supabase.umd.js"></script>
 <script src="assets/js/supabase.fabric.config.js?v=1771344458"></script>
 
@@ -459,8 +445,8 @@ a:hover { background-color: #005530 !important; color:#fff !important; }
 </script>
 
 
-<script src="assets/libs/chart.umd.min.js?v=1772000000"></script>
-<script src="assets/js/production-data.js?v=1772128547"></script>
+<script src="assets/js/chart.umd.min.js?v=1772000000"></script>
+<script src="assets/js/production-data.js?v=1771434637"></script>
   <script src="assets/js/risk-core.js"></script>
   
 <!-- ZP_CLEAR_RISK_V1 -->

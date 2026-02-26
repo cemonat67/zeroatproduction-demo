@@ -1087,8 +1087,6 @@ async function loadCFOShockV1() {
   const state = document.getElementById("cfoShockState");
   const rowsEl = document.getElementById("cfoShockRows");
   const batchEl = document.getElementById("cfoShockBatch");
-  const __dbg = /[?&]debug=1/.test(location.search);
-  if(__dbg) console.log("[CFO] init", {origin: location.origin, apiBase: (window.ZP_API_BASE||window.API_BASE||"")});
   if(!state || !rowsEl || !batchEl) return;
 
   const apiBase =
@@ -1096,17 +1094,15 @@ async function loadCFOShockV1() {
 
   // Prefer: explicit base → same-origin (proxy) → local dev api
   const url = apiBase
-    ? (apiBase + "/api/cfo_shock/latest")
-    : (location.origin + "/api/cfo_shock/latest");
+    ? (apiBase + "/cfo_shock/latest")
+    : (location.origin + "/cfo_shock/latest");
 
   // local dev fallback (no proxy case)
   const urlFallback = "http://127.0.0.1:8099/cfo_shock/latest";
 
   try {
     state.textContent = "Loading from CFO engine…";
-    if(__dbg) console.log("[CFO] fetch", url);
     const res = await fetch(url, { cache: "no-store" });
-    if(__dbg) console.log("[CFO] status", res.status);
     if(!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
 
@@ -1138,7 +1134,6 @@ async function loadCFOShockV1() {
     }
   } catch (e) {
     state.textContent = "OFFLINE: CFO engine not reachable";
-    if(__dbg) console.log("[CFO] error", e);
     rowsEl.innerHTML = `<tr><td colspan="4" class="mono">API error (check /api/cfo_shock/latest)</td></tr>`;
   }
 }
