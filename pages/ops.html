@@ -795,6 +795,11 @@ html {
           <div class="card-top">
             <h3>Trends</h3>
             <div class="chip" id="chipFacility">MERKEZ  20222025</div>
+
+          <div class="chip" id="chipWW" title="Wastewater (mapped facility)">
+            WW: <span id="wwHealth">--</span> · sev <span id="wwSev">--</span>
+          </div>
+
           </div>
           <p class="hint">Water intensity + recycle (from Supabase view <b>v_water_intelligence</b>).</p>
           <div class="canvas-wrap">
@@ -1158,7 +1163,55 @@ waterChart = new Chart(el, {
       $('gaugeNow').innerText = (v==null ? '--' : v.toFixed(1)) + ' m³/ton';
     }
 
-    function pickClient(){
+    
+      async function loadWastewaterCurrentState(opsFacility){
+        const chip = $('chipWW');
+        const hEl = $('wwHealth');
+        const sEl = $('wwSev');
+        if(!chip || !hEl || !sEl) return;
+
+        const wwFacility = mapWastewaterFacility(opsFacility);
+
+        const client = pickClient();
+        if(!client || !client.from){
+          hEl.innerText = '--';
+          sEl.innerText = '--';
+          return;
+        }
+
+        const { data, error } = await client
+          .from('v_wastewater_current_state')
+          .select('facility,health,severity,as_of,minutes_in_state')
+          .eq('facility', wwFacility)
+          .limit(1);
+
+        if(error){
+          console.warn("[OPS][WW] current_state error", error);
+          hEl.innerText = '--';
+          sEl.innerText = '--';
+          return;
+        }
+        const row = (data && data[0]) ? data[0] : null;
+        if(!row){
+          console.warn("[OPS][WW] no current_state row for", wwFacility);
+          hEl.innerText = '--';
+          sEl.innerText = '--';
+          return;
+        }
+
+        hEl.innerText = row.health || '--';
+        sEl.innerText = (row.severity==null ? '--' : String(row.severity));
+
+        // colorize chip similar to badges
+        try{ badgeClass(chip, row.health); }catch(_e){}
+
+        // richer tooltip
+        const mins = (row.minutes_in_state==null ? '--' : row.minutes_in_state);
+        chip.title = `Wastewater mapped facility: ${wwFacility}\nhealth=${row.health} severity=${row.severity}\nas_of=${row.as_of}\nminutes_in_state=${mins}`;
+      }
+
+
+function pickClient(){
       return window.supabaseClient || window.supabase || window.client || null;
     }
 
@@ -1283,6 +1336,7 @@ console.warn('[OPS] Demo fallback active.');
             window.__OPS_LIVE_ENABLED = true;
             const code = sel ? sel.value : 'MERKEZ';
             loadWater(code);
+            try{ loadWastewaterCurrentState(code); }catch(_e){}
             try { loadCFOShockV1(); } catch(_e){}
           });
         }
