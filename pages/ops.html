@@ -804,6 +804,14 @@ html {
           <p class="hint">Water intensity + recycle (from Supabase view <b>v_water_intelligence</b>).</p>
           <div class="canvas-wrap">
             <canvas id="waterTrendChart"></canvas>
+
+<style>
+  /* OPS_CHART_VIS_FIX_V1 */
+  #waterTrendChart{ width:100% !important; height:260px !important; display:block; }
+  /* if parent collapses, force it too */
+  #waterTrendChart{ min-height:260px !important; }
+</style>
+
           </div>
         </div>
 
