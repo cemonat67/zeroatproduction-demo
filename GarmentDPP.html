@@ -1,6 +1,41 @@
-<!doctype html><meta charset="utf-8">
-<title>Coming soon</title>
-<body style="font-family:system-ui;padding:24px">
-<h2>Module page not packaged yet.</h2>
-<p>This is a demo build. Please return to <a href="./index.html">Dashboard</a>.</p>
-</body>
+<!doctype html>
+<html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garment DPP — Demo</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;padding:24px;max-width:900px;margin:auto;background:#f7f8fb;color:#111}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .badge{font-size:12px;padding:4px 10px;border-radius:999px;background:#02154e;color:#fff}
+  .card{background:#fff;border:1px solid rgba(2,21,78,.12);border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,.06)}
+  .btn{display:inline-block;padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:700;margin-right:8px}
+  .primary{background:#f9ba00;color:#02154e}
+  .secondary{background:#eef0f6;color:#02154e}
+  .muted{opacity:.75}
+</style>
+<body>
+  <div class="top">
+    <div>
+      <h2 style="margin:0">Garment DPP</h2>
+      <div class="muted">Static-first demo landing (no blank screens).</div>
+    </div>
+    <div class="badge">DEMO SAFE</div>
+  </div>
+
+  <div class="card">
+    <p class="muted" style="margin-top:0">
+      This page is intentionally <b>static-first</b> for client demos.
+      The full interactive module UI will be packaged next.
+    </p>
+
+    <ul class="muted">
+      <li>Stable navigation</li>
+      <li>Offline-first behavior (demo mode)</li>
+      <li>Hooks ready for API/RAG/ML pipelines</li>
+    </ul>
+
+    <div>
+      <a class="btn primary" href="./index.html">← Back to Dashboard</a>
+      <a class="btn secondary" href="./index.html#modules">Modules</a>
+    </div>
+  </div>
+</body></html>
