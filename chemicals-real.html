@@ -51,7 +51,7 @@
   </head>
   <body>
     <!-- Snapshot content omitted for brevity -->
-  <a href="/" class="zero-back-btn">← Back</a>
+  <a href="./index.html#modules" class="zero-back-btn">← Back</a>
 <style>
 .zero-back-btn{
   position:fixed; top:16px; right:16px; z-index:9999;
@@ -65,5 +65,27 @@
 }
 .zero-back-btn:hover{ filter:brightness(0.95); transform:translateY(-1px); }
 </style>
-</body>
-</html>
+
+<script>
+/* ZP_BACK_SAFE_V1 */
+(function(){
+  function bind(){
+    var a = document.querySelector('a.btn.primary[href="./index.html#modules"], a[href="./index.html#modules"]');
+    if(!a) return;
+    a.addEventListener('click', function(e){
+      // If user came from dashboard, go back; else go to dashboard
+      try {
+        if (history.length > 1) {
+          e.preventDefault();
+          history.back();
+          setTimeout(function(){ location.href = "./index.html#modules"; }, 350);
+        }
+      } catch(_e){}
+    });
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+})();
+</script>
+
+</body></html>

@@ -27,7 +27,7 @@
         <div class="muted">Demo-safe module landing (no blank screens)</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-        <a class="btn ghost" href="./index.html">← Back to Dashboard</a>
+        <a class="btn ghost" href="./index.html#modules">← Back to Dashboard</a>
         <a class="btn primary" href="./ww_modal.html">Open Wastewater Console</a>
       </div>
     </div>
@@ -45,9 +45,31 @@
       <div style="font-weight:800;margin-bottom:8px">Quick Actions</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a class="btn primary" href="./index.html#cfoShockCard">Go to CFO Shock</a>
-        <a class="btn ghost" href="./index.html">Open Main Dashboard</a>
+        <a class="btn ghost" href="./index.html#modules">Open Main Dashboard</a>
       </div>
     </div>
   </div>
-</body>
-</html>
+
+<script>
+/* ZP_BACK_SAFE_V1 */
+(function(){
+  function bind(){
+    var a = document.querySelector('a.btn.primary[href="./index.html#modules"], a[href="./index.html#modules"]');
+    if(!a) return;
+    a.addEventListener('click', function(e){
+      // If user came from dashboard, go back; else go to dashboard
+      try {
+        if (history.length > 1) {
+          e.preventDefault();
+          history.back();
+          setTimeout(function(){ location.href = "./index.html#modules"; }, 350);
+        }
+      } catch(_e){}
+    });
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+})();
+</script>
+
+</body></html>
