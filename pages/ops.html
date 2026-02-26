@@ -1165,6 +1165,8 @@ waterChart = new Chart(el, {
 
     
       async function loadWastewaterCurrentState(opsFacility){
+        console.log("[OPS][WW] start", {opsFacility: opsFacility, mapped: (typeof mapFacility==="function"?mapFacility(opsFacility):null)});
+
         const chip = $('chipWW');
         const hEl = $('wwHealth');
         const sEl = $('wwSev');
@@ -1174,6 +1176,8 @@ waterChart = new Chart(el, {
 
         const client = pickClient();
         if(!client || !client.from){
+          console.warn("[OPS][WW] no supabase client");
+
           hEl.innerText = '--';
           sEl.innerText = '--';
           return;
@@ -1185,7 +1189,9 @@ waterChart = new Chart(el, {
           .eq('facility', wwFacility)
           .limit(1);
 
-        if(error){
+        
+        console.log("[OPS][WW] result", {data:data, error:error});
+if(error){
           console.warn("[OPS][WW] current_state error", error);
           hEl.innerText = '--';
           sEl.innerText = '--';
