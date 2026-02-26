@@ -931,6 +931,27 @@ html {
       return (n>=0?'+':'') + n.toFixed(1) + '%';
     }
 
+  // OPS_WW_FACILITY_MAP_V1
+  // Ops dashboard uses facility codes (MERKEZ/ORGU). Wastewater views use facility names (Ekoten).
+  function mapWastewaterFacility(opsFacility){
+    const m = {
+      "MERKEZ": "Ekoten",
+      "ORGU":   "Ekoten",
+    };
+    return m[String(opsFacility||"").trim()] || String(opsFacility||"").trim() || "Ekoten";
+  }
+
+  function severityToRisk100(sev){
+    // sev: typically 0-3 (or 1-4). Map to a "risk score" 0-100.
+    const n = Number(sev);
+    if(!Number.isFinite(n)) return null;
+    // normalize both ranges:
+    const sev01 = (n > 3) ? Math.max(0, Math.min(3, n-1)) : Math.max(0, Math.min(3, n));
+    const map = [15, 45, 70, 92]; // OK, MONITOR, ALERT, CRITICAL (demo-safe)
+    return map[Math.round(sev01)] ?? 45;
+  }
+
+
     let waterChart = null;
     let gaugeChart = null;
 
@@ -1048,6 +1069,11 @@ waterChart = new Chart(el, {
       }
 
       async function loadWastewaterTrend(facilityCode, labelsYears){
+        const wwFacility = mapWastewaterFacility(facilityCode);
+
+        // Pull recent transitions from timeline (view uses: facility, started_at, to_severity)
+        // NOTE: timeline currently only has facility="Ekoten". We map MERKEZ/ORGU -> Ekoten above.
+
         // Respect same Live Gate behavior as water
         if(window.PRODUCTION_MODE && !window.__OPS_LIVE_ENABLED){
           // demo fallback (matches ops look)
