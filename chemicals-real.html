@@ -48,7 +48,21 @@
       }
       .print-only-report { display: none; }
     </style>
-  </head>
+  
+<!-- ZP_QUERY_CLEAN_V1 -->
+<script>
+(function(){
+  try{
+    var u = new URL(window.location.href);
+    if(u.searchParams.has("v")){
+      u.searchParams.delete("v");
+      history.replaceState(null, "", u.pathname + (u.searchParams.toString()?("?"+u.searchParams.toString()):"") + u.hash);
+    }
+  }catch(e){}
+})();
+</script>
+
+</head>
   <body>
     <!-- Snapshot content omitted for brevity -->
   <a href="./index.html#modules" class="zero-back-btn">← Back</a>

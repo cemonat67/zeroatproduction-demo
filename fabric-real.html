@@ -14,7 +14,21 @@
       .zero-modal{z-index:9999;}
       .exec-card.is-focus{outline:3px solid #f9ba00; box-shadow:0 0 0 6px rgba(249,186,0,.18);}
     </style>
-  </head>
+  
+<!-- ZP_QUERY_CLEAN_V1 -->
+<script>
+(function(){
+  try{
+    var u = new URL(window.location.href);
+    if(u.searchParams.has("v")){
+      u.searchParams.delete("v");
+      history.replaceState(null, "", u.pathname + (u.searchParams.toString()?("?"+u.searchParams.toString()):"") + u.hash);
+    }
+  }catch(e){}
+})();
+</script>
+
+</head>
   <body>
     <!-- Snapshot content omitted for brevity -->
   <a href="./index.html#modules" class="zero-back-btn">← Back</a>

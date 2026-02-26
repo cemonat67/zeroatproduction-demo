@@ -21,7 +21,21 @@
       @media print{.app-header,.zero-color-bar,.container,.btn,#finishingClearFilter,#finishingTimeframe{display:none !important;}.print-only-report{display:block !important;}}
       .print-only-report{display:none;}
     </style>
-  </head>
+  
+<!-- ZP_QUERY_CLEAN_V1 -->
+<script>
+(function(){
+  try{
+    var u = new URL(window.location.href);
+    if(u.searchParams.has("v")){
+      u.searchParams.delete("v");
+      history.replaceState(null, "", u.pathname + (u.searchParams.toString()?("?"+u.searchParams.toString()):"") + u.hash);
+    }
+  }catch(e){}
+})();
+</script>
+
+</head>
   <body>
     <style>.exec-card{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}.exec-card:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(0,0,0,.18);}</style>
     <div class="zero-color-bar"></div>
