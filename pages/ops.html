@@ -961,7 +961,17 @@ waterChart = new Chart(el, {
           }
         }
       });
-    }
+    
+
+        /* OPS_WW_RENDER_INLINE_V2 */
+        try{
+          var years = labels;
+          loadWastewaterTrend(
+            (document.getElementById('facilitySelect')?.value || 'MERKEZ'),
+            years
+          );
+        }catch(_e){}
+}
       /* OPS_WW_TREND_V1 — overlay wastewater risk on Water Trend chart */
       function wwScoreFromRow(r){
         // Prefer numeric severity_score if present
