@@ -899,31 +899,34 @@ html {
 
   <!--  Supabase JS (CDN) + client bootstrap for ops.html -->
 <script>
-console.log('[OPS][BOOT]
+console.log('[OPS][BOOT] ops.html loaded', Date.now(), location.href);
+
 window.addEventListener('error', function(e){
-  try{ var x=document.getElementById('jsState'); if(x) x.textContent='ERROR'; }catch(_){ }
-  console.warn('[OPS][ERR]', e && (e.message||e));
+  try{
+    var x = document.getElementById('jsState');
+    if(x) x.textContent = 'ERROR';
+  }catch(_){}
+  console.warn('[OPS][ERR]', e && (e.message || e));
 });
- ops.html loaded', Date.now(), location.href);
 
-  (function(){
-    try{
-      if(window.supabaseClient) return;
+(function(){
+  try{
+    if(window.supabaseClient) return;
 
-      var base = (window.SUPABASE_URL || window.__SUPABASE_URL || window.ZERO_SUPABASE_URL || window.supabaseUrl || "").replace(/\/+$/, "");
-      var anon = window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY || window.ZERO_SUPABASE_ANON_KEY || window.supabaseAnonKey || window.SUPABASE_KEY || "";
-      var schema = window.SUPABASE_SCHEMA || "public";
+    var base = (window.SUPABASE_URL || window.__SUPABASE_URL || window.ZERO_SUPABASE_URL || window.supabaseUrl || "").replace(/\/+$/, "");
+    var anon = window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY || window.ZERO_SUPABASE_ANON_KEY || window.supabaseAnonKey || window.SUPABASE_KEY || "";
+    var schema = window.SUPABASE_SCHEMA || "public";
 
-      if(!base || !anon){ console.warn("[OPS] Supabase config missing"); return; }
-      if(!window.supabase || !window.supabase.createClient){ console.warn("[OPS] supabase-js not loaded"); return; }
+    if(!base || !anon){ console.warn("[OPS] Supabase config missing"); return; }
+    if(!window.supabase || !window.supabase.createClient){ console.warn("[OPS] supabase-js not loaded"); return; }
 
-      window.supabaseClient = window.supabase.createClient(base, anon, { db: { schema: schema } });
-      console.log("[OPS] supabaseClient ready", base, schema);
-    } catch(e){
-      console.warn("[OPS] supabaseClient bootstrap failed", e);
-    }
-  })();
-  </script>
+    window.supabaseClient = window.supabase.createClient(base, anon, { db: { schema: schema } });
+    console.log("[OPS] supabaseClient ready", base, schema);
+  } catch(e){
+    console.warn("[OPS] supabaseClient bootstrap failed", e);
+  }
+})();
+</script>
 
   <script>
     function $(id){ return document.getElementById(id); }
@@ -1015,16 +1018,21 @@ waterChart = new Chart(el, {
 
         
         // OPS_CHART_RESIZE_KICK_V1 (Safari/iPad: first render can be 0x0)
-        try{
-          requestAnimationFrame(function(){ try{ waterChart.resize(); waterChart.update();
-try{var x=document.getElementById('jsState'); if(x) x.textContent='CHART_OK';}catch(_e){}
-}catch(e){
-try{var x=document.getElementById('jsState'); if(x) x.textContent='CHART_FAIL';}catch(_e){}
-console.warn('[OPS][CHART] init failed', e);
-}
- }catch(_e){} });
-          setTimeout(function(){ try{ waterChart.resize(); waterChart.update(); }catch(_e){} }, 120);
-        }catch(_e){}
+try{
+  requestAnimationFrame(function(){
+    try{
+      if(waterChart){ waterChart.resize(); waterChart.update(); }
+      try{ var x=document.getElementById('jsState'); if(x) x.textContent='CHART_OK'; }catch(_e){}
+    }catch(e){
+      try{ var x=document.getElementById('jsState'); if(x) x.textContent='CHART_FAIL'; }catch(_e){}
+      console.warn('[OPS][CHART] init failed', e);
+    }
+  });
+
+  setTimeout(function(){
+    try{ if(waterChart){ waterChart.resize(); waterChart.update(); } }catch(_e){}
+  }, 120);
+}catch(_e){}
 /* OPS_WW_RENDER_INLINE_V2 */
         try{
           var years = labels;
