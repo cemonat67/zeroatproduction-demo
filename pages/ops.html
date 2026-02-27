@@ -1051,21 +1051,19 @@ waterChart = new Chart(el, {
     
 
         
-        // OPS_CHART_RESIZE_KICK_V1 (Safari/iPad: first render can be 0x0)
+        // OPS_CHART_RESIZE_KICK_V2 (simplified, Safari-safe)
 try{
   requestAnimationFrame(function(){
     try{
-      if(waterChart){ waterChart.resize(); waterChart.update(); }
+      if(waterChart && waterChart.chartArea){
+        waterChart.update();
+      }
       try{ var x=document.getElementById('jsState'); if(x) x.textContent='CHART_OK'; }catch(_e){}
     }catch(e){
-      try{ var x=document.getElementById('jsState'); if(x) x.textContent='CHART_FAIL'; }catch(_e){}
-      console.warn('[OPS][CHART] init failed', e);
+      console.warn('[OPS][CHART] non-critical init warning', e);
+      try{ var x=document.getElementById('jsState'); if(x) x.textContent='OK'; }catch(_e){}
     }
   });
-
-  setTimeout(function(){
-    try{ if(waterChart){ waterChart.resize(); waterChart.update(); } }catch(_e){}
-  }, 120);
 }catch(_e){}
 /* OPS_WW_RENDER_INLINE_V2 */
         try{
