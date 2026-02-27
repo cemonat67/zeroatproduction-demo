@@ -805,6 +805,8 @@ html {
           <div class="canvas-wrap">
             <canvas id="waterTrendChart"></canvas>
 <div id="jsStateBadge" style="margin-top:8px;font:12px/1.2 ui-monospace,Menlo,monospace;opacity:.85;">JS: <b id="jsState">BOOT</b></div>
+<div id="jsErr" style="margin-top:6px; font:12px/1.25 ui-monospace,Menlo,monospace; opacity:.85; color:#ffb3bf; white-space:pre-wrap;"></div>
+
 
 <style>
   /* OPS_CHART_VIS_FIX_V1 */
@@ -901,14 +903,47 @@ html {
 <script>
 console.log('[OPS][BOOT] ops.html loaded', Date.now(), location.href);
 
-window.addEventListener('error', function(e){
+window.__OPS_LAST_ERR__ = null;
+
+function __opsSetState__(v){
+  try{ var x=document.getElementById('jsState'); if(x) x.textContent=String(v||''); }catch(_e){}
+}
+function __opsSetErr__(msg){
+  try{ var e=document.getElementById('jsErr'); if(e) e.textContent=String(msg||''); }catch(_e){}
+}
+
+window.addEventListener('error', function(ev){
   try{
-    var x = document.getElementById('jsState');
-    if(x) x.textContent = 'ERROR';
-  }catch(_){}
-  console.warn('[OPS][ERR]', e && (e.message || e));
+    __opsSetState__('ERROR');
+    var msg = '';
+    try{ msg += (ev && ev.message) ? ev.message : String(ev||'error'); }catch(_e){}
+    try{
+      if(ev && ev.error && ev.error.stack){
+        msg += "\\n  " + String(ev.error.stack).slice(0, 1200);
+      } else {
+        // Safari sometimes provides filename/lineno/colno
+        if(ev && (ev.filename || ev.lineno || ev.colno)){
+          msg += "\\n  " + [ev.filename||'', ev.lineno||'', ev.colno||''].filter(Boolean).join(':');
+        }
+      }
+    }catch(_e){}
+    window.__OPS_LAST_ERR__ = msg;
+    __opsSetErr__(msg);
+    console.warn('[OPS][ERR]', msg);
+  }catch(_e){}
 });
 
+window.addEventListener('unhandledrejection', function(ev){
+  try{
+    __opsSetState__('ERROR');
+    var r = ev && ev.reason;
+    var msg = '[unhandledrejection] ' + (r && (r.message||r)) ;
+    try{ if(r && r.stack) msg += "\\n  " + String(r.stack).slice(0, 1200); }catch(_e){}
+    window.__OPS_LAST_ERR__ = msg;
+    __opsSetErr__(msg);
+    console.warn('[OPS][ERR]', msg);
+  }catch(_e){}
+});
 (function(){
   try{
     if(window.supabaseClient) return;
@@ -1264,6 +1299,7 @@ console.warn('[OPS] Demo fallback active.');
 
       renderTrend(d.years, d.m3, d.r);
       renderGauge(latestM3);
+      try{ if(window.__opsSetState__) window.__opsSetState__('OK'); }catch(_e){}
     
         try{ loadWastewaterTrend(facilityCode, d.years); }catch(_e){}
 }
@@ -1325,6 +1361,8 @@ console.warn('[OPS] Demo fallback active.');
     }
 
     function wire(){
+  try{ if(window.__opsSetState__) window.__opsSetState__('RUN'); }catch(_e){}
+
         const sel = $('facilitySelect');
         const btn = $('btnExecPdf');
         const btnLive = $('btnLoadLive');
