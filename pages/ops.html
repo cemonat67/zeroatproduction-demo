@@ -968,7 +968,10 @@ html {
     let waterChart = null;
     let gaugeChart = null;
 
-    function renderTrend(labels, intensity, recycle){
+    
+      // OPS_CHART_RESIZE_LISTENER_V1
+      try{ window.addEventListener("resize", function(){ try{ if(waterChart) waterChart.resize(); }catch(_e){} }); }catch(_e){}
+function renderTrend(labels, intensity, recycle){
       const el = $('waterTrendChart');
       if(!el || typeof Chart === 'undefined') return;
 
@@ -1000,7 +1003,13 @@ waterChart = new Chart(el, {
       });
     
 
-        /* OPS_WW_RENDER_INLINE_V2 */
+        
+        // OPS_CHART_RESIZE_KICK_V1 (Safari/iPad: first render can be 0x0)
+        try{
+          requestAnimationFrame(function(){ try{ waterChart.resize(); waterChart.update(); }catch(_e){} });
+          setTimeout(function(){ try{ waterChart.resize(); waterChart.update(); }catch(_e){} }, 120);
+        }catch(_e){}
+/* OPS_WW_RENDER_INLINE_V2 */
         try{
           var years = labels;
           loadWastewaterTrend(
