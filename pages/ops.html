@@ -988,6 +988,7 @@ function renderTrend(labels, intensity, recycle){
       
   
 console.log("[OPS][CHART] canvas box", el.getBoundingClientRect(), "parent", el.parentElement && el.parentElement.getBoundingClientRect && el.parentElement.getBoundingClientRect());
+try{
 console.log('[OPS][CHART] creating', {w: el.width, h: el.height});
 waterChart = new Chart(el, {
         
@@ -1015,7 +1016,13 @@ waterChart = new Chart(el, {
         
         // OPS_CHART_RESIZE_KICK_V1 (Safari/iPad: first render can be 0x0)
         try{
-          requestAnimationFrame(function(){ try{ waterChart.resize(); waterChart.update(); }catch(_e){} });
+          requestAnimationFrame(function(){ try{ waterChart.resize(); waterChart.update();
+try{var x=document.getElementById('jsState'); if(x) x.textContent='CHART_OK';}catch(_e){}
+}catch(e){
+try{var x=document.getElementById('jsState'); if(x) x.textContent='CHART_FAIL';}catch(_e){}
+console.warn('[OPS][CHART] init failed', e);
+}
+ }catch(_e){} });
           setTimeout(function(){ try{ waterChart.resize(); waterChart.update(); }catch(_e){} }, 120);
         }catch(_e){}
 /* OPS_WW_RENDER_INLINE_V2 */
