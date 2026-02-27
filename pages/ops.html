@@ -982,8 +982,8 @@ function renderTrend(labels, intensity, recycle){
       
   
 console.log("[OPS][CHART] canvas box", el.getBoundingClientRect(), "parent", el.parentElement && el.parentElement.getBoundingClientRect && el.parentElement.getBoundingClientRect());
+console.log('[OPS][CHART] creating', {w: el.width, h: el.height});
 waterChart = new Chart(el, {
-      console.log('[OPS][CHART] created', {w: el.width, h: el.height});
         
         type: 'line',
         data: {
