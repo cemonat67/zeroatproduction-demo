@@ -804,6 +804,7 @@ html {
           <p class="hint">Water intensity + recycle (from Supabase view <b>v_water_intelligence</b>).</p>
           <div class="canvas-wrap">
             <canvas id="waterTrendChart"></canvas>
+<div id="jsStateBadge" style="margin-top:8px;font:12px/1.2 ui-monospace,Menlo,monospace;opacity:.85;">JS: <b id="jsState">BOOT</b></div>
 
 <style>
   /* OPS_CHART_VIS_FIX_V1 */
@@ -898,7 +899,12 @@ html {
 
   <!--  Supabase JS (CDN) + client bootstrap for ops.html -->
 <script>
-console.log('[OPS][BOOT] ops.html loaded', Date.now(), location.href);
+console.log('[OPS][BOOT]
+window.addEventListener('error', function(e){
+  try{ var x=document.getElementById('jsState'); if(x) x.textContent='ERROR'; }catch(_){ }
+  console.warn('[OPS][ERR]', e && (e.message||e));
+});
+ ops.html loaded', Date.now(), location.href);
 
   (function(){
     try{
